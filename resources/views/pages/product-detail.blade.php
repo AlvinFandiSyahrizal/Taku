@@ -2,7 +2,7 @@
 
 @section('content')
 
-@php $locale = app()->getLocale(); @endphp
+@php $locale = session('lang', 'id'); @endphp
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap');
@@ -168,7 +168,6 @@
             </div>
         </div>
 
-        {{-- INFO --}}
         <div class="pd-info">
             <p class="pd-label">Taku</p>
             <h1 class="pd-name">{{ $product['name'] }}</h1>
@@ -210,7 +209,6 @@
 
     </div>
 
-    {{-- PRODUK LAINNYA --}}
     <div class="pd-others">
         <p class="pd-others-label">Taku</p>
         <h2 class="pd-others-title">{{ __('app.other_products') }}</h2>

@@ -105,8 +105,7 @@
                 <img src="{{ asset($item['image']) }}" width="100%" style="height:150px; object-fit:cover;">
                 <div style="padding:10px;">
                     <h4>{{ $item['name'] }}</h4>
-                    <p style="font-size:14px; color:gray;">{{ $item['desc'][app()->getLocale()] }}</p>                    <strong style="color:#0b2a4a;">{{ $item['price'] }}</strong>
-                </div>
+                    <p style="font-size:14px; color:gray;">{{ $item['desc'][session('lang', 'id')] }}</p>                </div>
             </div>
         </a>
         @endforeach
