@@ -78,6 +78,9 @@ return [
     |
     */
 
+    'wa_number' => env('WA_NUMBER', '6281324683769'),
+
+
     'locale' => env('APP_LOCALE', 'en'),
 
     'fallback_locale' => env('APP_FALLBACK_LOCALE', 'en'),

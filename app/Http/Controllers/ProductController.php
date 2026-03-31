@@ -6,56 +6,41 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-    private $products = [
+    public $products = [
         [
-            'name'   => 'Cuxin',
-            'desc'   => [
-                'id' => 'Cantik banget',
-                'en' => 'Beautifully crafted',
-            ],
-            'price'  => 'Rp 50.000',
-            'image'  => 'images/gambar1.jpg',
-            'images' => [
-                'images/gambar1.jpg',
-                'images/gambar2.jpg',
-            ],
-            'detail' => [
-                'id' => 'Deskripsi lengkap produk Cuxin dalam bahasa Indonesia. Produk ini dibuat dengan bahan berkualitas tinggi.',
-                'en' => 'Full description of Cuxin product in English. This product is made with high quality materials.',
+            'name'     => 'Cuxin',
+            'desc'     => ['id' => 'Cantik banget', 'en' => 'Beautifully crafted'],
+            'price'    => 'Rp 50.000',
+            'price_num'=> 50000,
+            'image'    => 'images/gambar1.jpg',
+            'images'   => ['images/gambar1.jpg', 'images/gambar2.jpg'],
+            'detail'   => [
+                'id' => 'Deskripsi lengkap produk Cuxin dalam bahasa Indonesia.',
+                'en' => 'Full description of Cuxin product in English.',
             ],
         ],
         [
-            'name'   => 'Ying',
-            'desc'   => [
-                'id' => 'Cadia riverland',
-                'en' => 'Cadia riverland',
-            ],
-            'price'  => 'Rp 70.000',
-            'image'  => 'images/gambar2.jpg',
-            'images' => [
-                'images/gambar2.jpg',
-                'images/gambar3.jpg',
-            ],
-            'detail' => [
-                'id' => 'Deskripsi lengkap produk Ying dalam bahasa Indonesia. Dibuat dengan desain elegan dan modern.',
-                'en' => 'Full description of Ying product in English. Made with elegant and modern design.',
+            'name'     => 'Ying',
+            'desc'     => ['id' => 'Cadia riverland', 'en' => 'Cadia riverland'],
+            'price'    => 'Rp 70.000',
+            'price_num'=> 70000,
+            'image'    => 'images/gambar2.jpg',
+            'images'   => ['images/gambar2.jpg', 'images/gambar3.jpg'],
+            'detail'   => [
+                'id' => 'Deskripsi lengkap produk Ying dalam bahasa Indonesia.',
+                'en' => 'Full description of Ying product in English.',
             ],
         ],
         [
-            'name'   => 'Yue',
-            'desc'   => [
-                'id' => 'Cantik banget',
-                'en' => 'Beautifully crafted',
-            ],
-            'price'  => 'Rp 60.000',
-            'image'  => 'images/gambar3.jpg',
-            'images' => [
-                'images/gambar3.jpg',
-                'images/gambar1.jpg',
-            ],
-            'detail' => [
-                'id' => 'Deskripsi lengkap produk Yue dalam bahasa Indonesia. Kualitas terjamin dengan bahan pilihan.',
-                'en' => 'Full description of Yue product in English. Guaranteed quality with selected materials.',
+            'name'     => 'Yue',
+            'desc'     => ['id' => 'Cantik banget', 'en' => 'Beautifully crafted'],
+            'price'    => 'Rp 60.000',
+            'price_num'=> 60000,
+            'image'    => 'images/gambar3.jpg',
+            'images'   => ['images/gambar3.jpg', 'images/gambar1.jpg'],
+            'detail'   => [
+                'id' => 'Deskripsi lengkap produk Yue dalam bahasa Indonesia.',
+                'en' => 'Full description of Yue product in English.',
             ],
         ],
     ];
@@ -66,13 +51,65 @@ class ProductController extends Controller
 
         if ($request->has('q') && $request->q != '') {
             $q = strtolower($request->q);
-            $products = array_filter($products, function ($item) use ($q) {
-                return str_contains(strtolower($item['name']), $q);
-            });
+            $products = array_filter($products, fn($item) =>
+                str_contains(strtolower($item['name']), $q)
+            );
         }
 
-        return view('pages.home', [
-            'products' => $products,
+        return view('pages.home', ['products' => array_values($products)]);
+    }
+
+    public function shop(Request $request)
+    {
+        $products = $this->products;
+
+        // Search
+        if ($request->filled('q')) {
+            $q = strtolower($request->q);
+            $products = array_filter($products, fn($item) =>
+                str_contains(strtolower($item['name']), $q)
+            );
+        }
+
+        // Filter harga
+        if ($request->filled('min_price')) {
+            $products = array_filter($products, fn($item) =>
+                $item['price_num'] >= (int) $request->min_price
+            );
+        }
+        if ($request->filled('max_price')) {
+            $products = array_filter($products, fn($item) =>
+                $item['price_num'] <= (int) $request->max_price
+            );
+        }
+
+        // Sort
+        $products = array_values($products);
+        $sort = $request->get('sort', 'default');
+
+        if ($sort === 'name_az') {
+            usort($products, fn($a, $b) => strcmp($a['name'], $b['name']));
+        } elseif ($sort === 'name_za') {
+            usort($products, fn($a, $b) => strcmp($b['name'], $a['name']));
+        } elseif ($sort === 'price_lo') {
+            usort($products, fn($a, $b) => $a['price_num'] - $b['price_num']);
+        } elseif ($sort === 'price_hi') {
+            usort($products, fn($a, $b) => $b['price_num'] - $a['price_num']);
+        }
+
+        $allPrices    = array_column($this->products, 'price_num');
+        $minPossible  = min($allPrices);
+        $maxPossible  = max($allPrices);
+
+        return view('pages.Product', [
+            'products'    => $products,
+            'total'       => count($products),
+            'sort'        => $sort,
+            'minPossible' => $minPossible,
+            'maxPossible' => $maxPossible,
+            'minPrice'    => $request->get('min_price', $minPossible),
+            'maxPrice'    => $request->get('max_price', $maxPossible),
+            'q'           => $request->get('q', ''),
         ]);
     }
 

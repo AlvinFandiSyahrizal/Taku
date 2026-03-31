@@ -2,7 +2,10 @@
 
 @section('content')
 
-@php $locale = session('lang', 'id'); @endphp
+@php
+    app()->setLocale(session('lang', 'id'));
+    $locale = session('lang', 'id');
+@endphp
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap');
@@ -153,7 +156,6 @@
 
     <div class="pd-main">
 
-        {{-- GAMBAR --}}
         <div class="pd-images">
             <img id="mainImage" src="{{ asset($product['images'][0]) }}" class="pd-main-img" alt="{{ $product['name'] }}">
             <div class="pd-thumbnails">

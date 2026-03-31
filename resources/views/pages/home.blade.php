@@ -2,87 +2,81 @@
 
 @section('content')
 
+@php
+    app()->setLocale(session('lang', 'id'));
+    $locale = session('lang', 'id');
+@endphp
+
+
 <section style="
     background: linear-gradient(160deg, #0b2a4a 0%, #0e3459 60%, #112f50 100%);
-    min-height: 320px;
+    min-height: 250px;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
-    padding: 60px 24px 48px;
+    padding: 32px 24px 36px;
     position: relative;
     overflow: hidden;
 ">
 
     <div style="
         position: absolute;
-        width: 500px; height: 500px;
+        width: 400px; height: 400px;
         border-radius: 50%;
-        background: radial-gradient(circle, rgba(201,169,110,0.06) 0%, transparent 70%);
+        background: radial-gradient(circle, rgba(201,169,110,0.05) 0%, transparent 70%);
         top: 50%; left: 50%;
         transform: translate(-50%, -50%);
         pointer-events: none;
     "></div>
 
-    <div style="display:flex; flex-direction:column; align-items:center; gap:18px; position:relative; z-index:1;">
+    <div style="display:flex; flex-direction:column; align-items:center; gap:14px; position:relative; z-index:1;">
 
-        <img src="{{ asset('images/gambar1.jpg') }}" style="width:80px; height:auto; object-fit:contain; filter: drop-shadow(0 0 18px rgba(201,169,110,0.25));">
+        <img
+            src="{{ asset('images/gambar1.jpg') }}"
+            style="
+                width:auto;
+                height:auto;
+                object-fit: cover;
+                border-radius: 10px;
+                filter: drop-shadow(0 0 14px rgba(201,169,110,0.2));
+            "
+        >
 
-        {{-- Nama toko --}}
-        {{-- <div style="
-            font-family: 'DM Sans', sans-serif;
-            font-weight: 500;
-            font-size: 38px;
-            color: #f0ebe0;
-            letter-spacing: 0.22em;
-            text-transform: uppercase;
-            line-height: 1;
-        ">TAKU</div> --}}
-
-        <div style="width:36px; height:1px; background: linear-gradient(90deg, transparent, #c9a96e, transparent);"></div>
-
-        {{-- <div style="
-            font-size: 10px;
-            color: rgba(201,169,110,0.7);
-            letter-spacing: 0.28em;
-            text-transform: uppercase;
-            font-family: 'DM Sans', sans-serif;
-        ">{{ session('lang') == 'en' ? 'Your Store' : 'Toko Kamu' }}</div>
-
-    </div> --}}
-
-    <form action="/products" method="GET" style="
-        display: inline-flex;
-        align-items: center;
-        background: rgba(255,255,255,0.07);
-        border: 0.5px solid rgba(255,255,255,0.18);
-        border-radius: 100px;
-        padding: 10px 10px 10px 18px;
-        gap: 10px;
-        width: 340px;
-        max-width: 90%;
-        position: relative;
-        z-index: 1;
-        margin-top: 28px;
-    ">
-        <input type="text" name="q"
-            placeholder="{{ session('lang') == 'en' ? 'Search products...' : 'Cari produk...' }}"
-            style="background:none; border:none; outline:none; color:white; font-size:12px; font-family:'DM Sans',sans-serif; flex:1; min-width:0;">
-        <button type="submit" style="
-            background: #c9a96e;
-            border: none;
+        <form action="/products" method="GET" style="
+            display: inline-flex;
+            align-items: center;
+            background: rgba(255,255,255,0.07);
+            border: 0.5px solid rgba(255,255,255,0.18);
             border-radius: 100px;
-            color: #0b2a4a;
-            font-size: 10px;
-            letter-spacing: 0.1em;
-            text-transform: uppercase;
-            font-weight: 500;
-            padding: 7px 18px;
-            cursor: pointer;
-            white-space: nowrap;
-            font-family: 'DM Sans', sans-serif;
-        ">{{ session('lang') == 'en' ? 'Search' : 'Cari' }}</button>
-    </form>
+            padding: 8px 8px 8px 16px;
+            gap: 10px;
+            width: 320px;
+            max-width: 90%;
+        ">
+            <input
+                type="text"
+                name="q"
+                placeholder="{{ session('lang') == 'en' ? 'Search products...' : 'Cari produk...' }}"
+                style="background:none; border:none; outline:none; color:white; font-size:12px; font-family:'DM Sans',sans-serif; flex:1; min-width:0;"
+            >
+            <button type="submit" style="
+                background: #c9a96e;
+                border: none;
+                border-radius: 100px;
+                color: #0b2a4a;
+                font-size: 10px;
+                letter-spacing: 0.1em;
+                text-transform: uppercase;
+                font-weight: 500;
+                padding: 7px 16px;
+                cursor: pointer;
+                white-space: nowrap;
+                font-family: 'DM Sans', sans-serif;
+            ">{{ session('lang') == 'en' ? 'Search' : 'Cari' }}</button>
+        </form>
+
+    </div>
 
 </section>
 
