@@ -19,7 +19,7 @@ class CheckoutController extends Controller
             return $price * $item['qty'];
         }, $cart));
 
-        return view('pages.checkout', [
+        return view('pages.Checkout', [
             'cart'  => $cart,
             'total' => $total,
         ]);
