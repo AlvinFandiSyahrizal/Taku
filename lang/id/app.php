@@ -14,7 +14,6 @@ return [
     'store_tagline'     => 'Toko Kamu',
 
     // Home
-    'products'          => 'Produk',
     'all_products'      => 'Semua Produk',
 
     // Product Detail
@@ -23,5 +22,19 @@ return [
     'buy_now'           => 'Beli Sekarang',
     'add_to_cart'       => 'Tambah ke Keranjang',
     'quantity'          => 'Jumlah',
+    'added_to_cart'     => 'Produk berhasil ditambahkan ke keranjang!',
+
+    // Cart
+    'cart_title'        => 'Keranjang Belanja',
+    'cart_empty'        => 'Keranjang kamu masih kosong.',
+    'cart_shop_now'     => 'Belanja Sekarang',
+    'cart_product'      => 'Produk',
+    'cart_price'        => 'Harga',
+    'cart_qty'          => 'Jumlah',
+    'cart_subtotal'     => 'Subtotal',
+    'cart_total'        => 'Total',
+    'cart_remove'       => 'Hapus',
+    'cart_clear'        => 'Kosongkan Keranjang',
+    'cart_checkout'     => 'Checkout',
 
 ];

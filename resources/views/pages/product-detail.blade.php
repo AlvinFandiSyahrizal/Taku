@@ -2,175 +2,261 @@
 
 @section('content')
 
-<div class="container" style="margin-top:40px; max-width:1100px; margin-left:auto; margin-right:auto;">
+@php $locale = app()->getLocale(); @endphp
 
-    <div style="display:flex; gap:50px; flex-wrap:wrap; align-items:flex-start;">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap');
 
-        <div style="flex:1; min-width:300px; display:flex; flex-direction:column; align-items:center;">
+.pd-wrap {
+    max-width: 1100px;
+    margin: 56px auto 80px;
+    padding: 0 32px;
+    font-family: 'DM Sans', sans-serif;
+}
 
-            <img
-                id="mainImage"
-                src="{{ asset($product['images'][0]) }}"
-                style="
-                    width:400px;
-                    height:400px;
-                    object-fit:cover;
-                    border-radius:12px;
-                    box-shadow:0 4px 10px rgba(0,0,0,0.1);
-                "
-            >
+.pd-flash {
+    background: #f0f7f0;
+    border: 0.5px solid #b2d9b2;
+    border-radius: 8px;
+    padding: 12px 20px;
+    font-size: 13px;
+    color: #2d6a2d;
+    margin-bottom: 32px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.pd-flash-dot { width: 6px; height: 6px; border-radius: 50%; background: #2d6a2d; flex-shrink: 0; }
 
-            <div style="display:flex; gap:10px; margin-top:15px;">
-                @foreach($product['images'] as $img)
+.pd-main { display: flex; gap: 60px; flex-wrap: wrap; align-items: flex-start; }
+
+.pd-images {
+    flex: 1; min-width: 300px;
+    display: flex; flex-direction: column; align-items: center; gap: 16px;
+    position: sticky; top: 84px;
+}
+
+.pd-main-img {
+    width: 100%; max-width: 420px; aspect-ratio: 1;
+    object-fit: cover; border-radius: 16px; display: block;
+    transition: opacity 0.3s ease;
+}
+
+.pd-thumbnails { display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; }
+
+.pd-thumb {
+    width: 68px; height: 68px; object-fit: cover;
+    border-radius: 8px; cursor: pointer;
+    border: 1.5px solid transparent; opacity: 0.65;
+    transition: opacity 0.2s, border-color 0.2s;
+}
+.pd-thumb:hover { opacity: 1; }
+.pd-thumb.active { border-color: #c9a96e; opacity: 1; }
+
+.pd-info { flex: 1; min-width: 300px; }
+
+.pd-label { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #c9a96e; margin-bottom: 12px; }
+
+.pd-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-weight: 400; font-size: 38px; color: #0b2a4a;
+    letter-spacing: 0.02em; line-height: 1.1; margin-bottom: 12px;
+}
+
+.pd-price { font-size: 22px; font-weight: 500; color: #0b2a4a; margin-bottom: 28px; }
+
+.pd-divider { height: 0.5px; background: rgba(11,42,74,0.1); margin: 24px 0; }
+
+.pd-detail-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(11,42,74,0.45); margin-bottom: 10px; }
+
+.pd-detail-text { font-size: 14px; color: #555; line-height: 1.8; }
+
+.pd-qty-label { font-size: 10px; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(11,42,74,0.45); margin-bottom: 10px; }
+
+.pd-qty-wrap {
+    display: inline-flex; align-items: center;
+    border: 0.5px solid rgba(11,42,74,0.2); border-radius: 8px; overflow: hidden;
+}
+
+.pd-qty-btn {
+    background: none; border: none; cursor: pointer;
+    width: 40px; height: 40px; font-size: 18px; color: #0b2a4a;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.15s; font-family: 'DM Sans', sans-serif;
+}
+.pd-qty-btn:hover { background: rgba(11,42,74,0.05); }
+
+.pd-qty-input {
+    width: 52px; text-align: center;
+    border: none;
+    border-left: 0.5px solid rgba(11,42,74,0.12);
+    border-right: 0.5px solid rgba(11,42,74,0.12);
+    outline: none; font-size: 14px; font-weight: 500;
+    color: #0b2a4a; height: 40px; font-family: 'DM Sans', sans-serif;
+}
+
+.pd-actions { display: flex; gap: 12px; margin-top: 28px; flex-wrap: wrap; }
+
+.pd-btn-primary {
+    flex: 1; min-width: 140px; padding: 14px 20px;
+    background: #0b2a4a; color: #f0ebe0; border: none;
+    border-radius: 8px; cursor: pointer; font-size: 11px;
+    letter-spacing: 0.14em; text-transform: uppercase;
+    font-weight: 500; font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s, transform 0.15s;
+}
+.pd-btn-primary:hover { background: #0d3459; transform: translateY(-1px); }
+
+.pd-btn-secondary {
+    flex: 1; min-width: 140px; padding: 14px 20px;
+    background: none; color: #0b2a4a;
+    border: 0.5px solid #0b2a4a; border-radius: 8px;
+    cursor: pointer; font-size: 11px; letter-spacing: 0.14em;
+    text-transform: uppercase; font-weight: 500;
+    font-family: 'DM Sans', sans-serif;
+    transition: background 0.2s, transform 0.15s;
+}
+.pd-btn-secondary:hover { background: rgba(11,42,74,0.04); transform: translateY(-1px); }
+
+.pd-others { margin-top: 80px; padding-top: 40px; border-top: 0.5px solid rgba(11,42,74,0.08); }
+.pd-others-label { font-size: 10px; letter-spacing: 0.22em; text-transform: uppercase; color: #c9a96e; margin-bottom: 8px; }
+.pd-others-title { font-family: 'Cormorant Garamond', serif; font-weight: 400; font-size: 28px; color: #0b2a4a; margin-bottom: 28px; }
+
+.pd-others-grid {
+    display: flex; gap: 16px; overflow-x: auto; padding-bottom: 12px;
+    scrollbar-width: thin; scrollbar-color: rgba(201,169,110,0.3) transparent;
+}
+
+.pd-other-card {
+    min-width: 160px; max-width: 160px; border-radius: 12px; overflow: hidden;
+    border: 0.5px solid rgba(11,42,74,0.1); text-decoration: none;
+    color: inherit; flex-shrink: 0; display: block;
+    transition: transform 0.25s, box-shadow 0.25s;
+}
+.pd-other-card:hover { transform: translateY(-4px); box-shadow: 0 8px 24px rgba(11,42,74,0.1); }
+.pd-other-card.current { border-color: #c9a96e; pointer-events: none; }
+
+.pd-other-img { width: 100%; height: 130px; object-fit: cover; display: block; }
+.pd-other-info { padding: 10px 12px 12px; }
+.pd-other-name { font-size: 13px; font-weight: 500; color: #0b2a4a; margin-bottom: 2px; }
+.pd-other-price { font-size: 12px; color: #c9a96e; }
+</style>
+
+<div class="pd-wrap">
+
+    @if(session('success'))
+        <div class="pd-flash">
+            <div class="pd-flash-dot"></div>
+            {{ session('success') }}
+        </div>
+    @endif
+
+    <div class="pd-main">
+
+        {{-- GAMBAR --}}
+        <div class="pd-images">
+            <img id="mainImage" src="{{ asset($product['images'][0]) }}" class="pd-main-img" alt="{{ $product['name'] }}">
+            <div class="pd-thumbnails">
+                @foreach($product['images'] as $i => $img)
                     <img
                         src="{{ asset($img) }}"
-                        style="
-                            width:70px;
-                            height:70px;
-                            object-fit:cover;
-                            border-radius:8px;
-                            cursor:pointer;
-                            border:2px solid transparent;
-                        "
+                        class="pd-thumb {{ $i === 0 ? 'active' : '' }}"
                         onclick="changeImage('{{ asset($img) }}', this)"
-                        onmouseover="this.style.opacity='0.7'"
-                        onmouseout="this.style.opacity='1'"
+                        alt="thumb"
                     >
                 @endforeach
             </div>
-
         </div>
 
+        {{-- INFO --}}
+        <div class="pd-info">
+            <p class="pd-label">Taku</p>
+            <h1 class="pd-name">{{ $product['name'] }}</h1>
+            <p class="pd-price">{{ $product['price'] }}</p>
 
+            <div class="pd-divider"></div>
 
-        <div style="flex:1; min-width:300px;">
+            <p class="pd-detail-label">{{ __('app.product_details') }}</p>
+            <p class="pd-detail-text">{{ $product['detail'][$locale] }}</p>
 
-            <h2 style="margin-bottom:10px;">{{ $product['name'] }}</h2>
+            <div class="pd-divider"></div>
 
-            <h3 style="color:#0b2a4a; margin-bottom:20px;">
-                {{ $product['price'] }}
-            </h3>
-
-            <hr>
-
-            <h4 style="margin-top:20px;">Product Details</h4>
-            <p style="color:#555; line-height:1.6;">
-                {{ $product['detail'] }}
-            </p>
-
-            <hr style="margin:20px 0;">
-
-            <div style="display:flex; align-items:center; gap:10px;">
-                <button onclick="decrease()" style="padding:6px 12px;">-</button>
-
-                <input
-                    type="text"
-                    id="qty"
-                    value="1"
-                    style="width:50px; text-align:center;"
-                >
-
-                <button onclick="increase()" style="padding:6px 12px;">+</button>
+            <p class="pd-qty-label">{{ __('app.quantity') }}</p>
+            <div class="pd-qty-wrap">
+                <button class="pd-qty-btn" type="button" onclick="decrease()">−</button>
+                <input type="text" id="qty" value="1" class="pd-qty-input">
+                <button class="pd-qty-btn" type="button" onclick="increase()">+</button>
             </div>
 
-            <div style="margin-top:20px; display:flex; gap:10px; flex-wrap:wrap;">
+            <form id="cartForm" action="{{ route('cart.add') }}" method="POST">
+                @csrf
+                <input type="hidden" name="product_id" value="{{ $id }}">
+                <input type="hidden" name="name" value="{{ $product['name'] }}">
+                <input type="hidden" name="price" value="{{ $product['price'] }}">
+                <input type="hidden" name="image" value="{{ $product['image'] }}">
+                <input type="hidden" name="qty" id="formQty" value="1">
+                <input type="hidden" name="action" id="formAction" value="add_to_cart">
 
-                <button style="
-                    padding:10px 20px;
-                    background:#0b2a4a;
-                    color:white;
-                    border:none;
-                    border-radius:6px;
-                    cursor:pointer;
-                ">
-                    Buy Now
-                </button>
-
-                <button style="
-                    padding:10px 20px;
-                    border:1px solid #0b2a4a;
-                    border-radius:6px;
-                    cursor:pointer;
-                ">
-                    Add to Cart
-                </button>
-
-            </div>
-
+                <div class="pd-actions">
+                    <button type="button" class="pd-btn-primary" onclick="submitCart('buy_now')">
+                        {{ __('app.buy_now') }}
+                    </button>
+                    <button type="button" class="pd-btn-secondary" onclick="submitCart('add_to_cart')">
+                        {{ __('app.add_to_cart') }}
+                    </button>
+                </div>
+            </form>
         </div>
 
     </div>
 
-    <div style="margin-top:60px;">
-        <h3>Produk Lainnya</h3>
-
-        <div style="display:flex; gap:20px; overflow-x:auto; padding-bottom:10px;">
-
+    {{-- PRODUK LAINNYA --}}
+    <div class="pd-others">
+        <p class="pd-others-label">Taku</p>
+        <h2 class="pd-others-title">{{ __('app.other_products') }}</h2>
+        <div class="pd-others-grid">
             @foreach($products as $index => $item)
-                <a href="/product/{{ $index }}" style="text-decoration:none; color:black;">
-
-                    <div style="
-                        min-width:150px;
-                        border-radius:10px;
-                        overflow:hidden;
-                        box-shadow:0 2px 6px rgba(0,0,0,0.1);
-                        transition:0.3s;
-                    "
-                    onmouseover="this.style.transform='scale(1.05)'"
-                    onmouseout="this.style.transform='scale(1)'"
-                    >
-
-                        <img
-                            src="{{ asset($item['image']) }}"
-                            style="width:100%; height:120px; object-fit:cover;"
-                        >
-
-                        <div style="padding:8px;">
-                            <p style="margin:0;">{{ $item['name'] }}</p>
-                        </div>
-
+                <a href="{{ route('product.show', $index) }}" class="pd-other-card {{ $index == $id ? 'current' : '' }}">
+                    <img src="{{ asset($item['image']) }}" class="pd-other-img" alt="{{ $item['name'] }}">
+                    <div class="pd-other-info">
+                        <p class="pd-other-name">{{ $item['name'] }}</p>
+                        <p class="pd-other-price">{{ $item['price'] }}</p>
                     </div>
-
                 </a>
             @endforeach
-
         </div>
     </div>
 
 </div>
 
-
 <a href="https://wa.me/6281324683769" target="_blank" style="
-    position:fixed;
-    bottom:20px;
-    right:20px;
-    background:green;
-    color:white;
-    padding:15px;
-    border-radius:50%;
-    text-decoration:none;
-">
-    💬
-</a>
-
+    position:fixed; bottom:24px; right:24px;
+    background:#25d366; color:white;
+    width:52px; height:52px; border-radius:50%;
+    text-decoration:none; display:flex;
+    align-items:center; justify-content:center;
+    font-size:22px; box-shadow:0 4px 16px rgba(0,0,0,0.15);
+    transition:transform 0.2s;
+" onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">💬</a>
 
 <script>
 function changeImage(src, el) {
     document.getElementById('mainImage').src = src;
-
-    let thumbs = el.parentElement.querySelectorAll('img');
-    thumbs.forEach(img => img.style.border = '2px solid transparent');
-    el.style.border = '2px solid #0b2a4a';
+    document.querySelectorAll('.pd-thumb').forEach(img => img.classList.remove('active'));
+    el.classList.add('active');
 }
-
 function increase() {
     let qty = document.getElementById('qty');
     qty.value = parseInt(qty.value) + 1;
 }
-
 function decrease() {
     let qty = document.getElementById('qty');
-    if (qty.value > 1) qty.value--;
+    if (parseInt(qty.value) > 1) qty.value = parseInt(qty.value) - 1;
+}
+function submitCart(action) {
+    document.getElementById('formQty').value = document.getElementById('qty').value;
+    document.getElementById('formAction').value = action;
+    document.getElementById('cartForm').submit();
 }
 </script>
 
