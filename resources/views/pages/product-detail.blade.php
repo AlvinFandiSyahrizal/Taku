@@ -42,7 +42,7 @@
         </div>
 
 
-        
+
         <div style="flex:1; min-width:300px;">
 
             <h2 style="margin-bottom:10px;">{{ $product['name'] }}</h2>
@@ -140,7 +140,7 @@
 </div>
 
 
-<a href="https://wa.me/628xxxxxxxxxx" target="_blank" style="
+<a href="https://wa.me/6281324683769" target="_blank" style="
     position:fixed;
     bottom:20px;
     right:20px;
