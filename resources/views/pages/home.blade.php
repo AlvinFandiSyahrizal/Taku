@@ -113,7 +113,7 @@
     </div>
 </section>
 
-<a href="https://wa.me/6281324683769" target="_blank" style="
+<a href="https://wa.me/6282124511773" target="_blank" style="
     position:fixed;
     bottom:20px;
     right:20px;

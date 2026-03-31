@@ -227,7 +227,7 @@
 
 </div>
 
-<a href="https://wa.me/6281324683769" target="_blank" style="
+<a href="https://wa.me/6282124511773" target="_blank" style="
     position:fixed; bottom:24px; right:24px;
     background:#25d366; color:white;
     width:52px; height:52px; border-radius:50%;

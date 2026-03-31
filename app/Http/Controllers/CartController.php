@@ -14,7 +14,7 @@ class CartController extends Controller
             return $price * $item['qty'];
         }, $cart));
 
-        return view('pages.cart', [
+        return view('pages.Cart', [
             'cart'  => $cart,
             'total' => $total,
         ]);
