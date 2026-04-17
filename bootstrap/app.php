@@ -12,7 +12,16 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->append(\App\Http\Middleware\SetLocale::class);
+        $middleware->append(\App\Http\Middleware\TrackPageView::class);
+
+        $middleware->alias([
+            'isAdmin'           => \App\Http\Middleware\IsAdmin::class,
+            'isMerchant'        => \App\Http\Middleware\IsMerchant::class,
+            'isAdminOrMerchant' => \App\Http\Middleware\IsAdminOrMerchant::class,
+        ]);
     })
+
+    
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();

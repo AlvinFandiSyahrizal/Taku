@@ -26,7 +26,7 @@ return [
 
     // Cart
     'cart_title'        => 'Shopping Cart',
-    'cart_empty'        => 'Your cart is empty.',
+    'cart_empty'        => 'your cart is empty, please buy:).',
     'cart_shop_now'     => 'Shop Now',
     'cart_product'      => 'Product',
     'cart_price'        => 'Price',

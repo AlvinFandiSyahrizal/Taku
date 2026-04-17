@@ -26,7 +26,7 @@ return [
 
     // Cart
     'cart_title'        => 'Keranjang Belanja',
-    'cart_empty'        => 'Keranjang kamu masih kosong.',
+    'cart_empty'        => 'Keranjang belanja Anda kosong, silakan beli :).',
     'cart_shop_now'     => 'Belanja Sekarang',
     'cart_product'      => 'Produk',
     'cart_price'        => 'Harga',
