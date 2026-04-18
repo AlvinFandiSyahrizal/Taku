@@ -323,10 +323,9 @@
 <p class="footer-note">© {{ date('Y') }} Taku Marketplace · Semua hak dilindungi</p>
 
 <script>
-
-
-const retrySeconds = {{ request()->header('Retry-After', 7200) }};
-
+const retrySeconds = {{ file_exists(storage_path('framework/down'))
+    ? (json_decode(file_get_contents(storage_path('framework/down')), true)['retry'] ?? 600)
+    : 600 }};
 
 const downSince = {{ file_exists(storage_path('framework/down'))
     ? filemtime(storage_path('framework/down')) * 1000
@@ -359,10 +358,8 @@ function updateCountdown() {
 updateCountdown();
 setInterval(updateCountdown, 1000);
 
-
 function submitNotify() {
     const email = document.getElementById('notifyEmail').value;
-
     if (!email || !email.includes('@')) return;
 
     document.getElementById('notifySuccess').style.display = 'block';
@@ -370,5 +367,6 @@ function submitNotify() {
     document.querySelector('.notify-btn').textContent = '✓ Tersimpan';
 }
 </script>
+
 </body>
 </html>
