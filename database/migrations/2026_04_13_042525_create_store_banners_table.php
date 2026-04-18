@@ -5,6 +5,10 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration {
     public function up(): void {
+
+        if (Schema::hasTable('store_banners')) {
+            return;
+        }
         Schema::create('store_banners', function (Blueprint $table) {
             $table->id();
             $table->foreignId('store_id')->nullable()->constrained()->nullOnDelete();
