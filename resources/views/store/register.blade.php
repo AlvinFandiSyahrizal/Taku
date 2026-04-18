@@ -281,7 +281,7 @@ function updateSubmit() {
 }
 
 // ── Wilayah.id API ────────────────────────────────────────────────
-const BASE = 'https://wilayah.id/api';
+const BASE = '/api/wilayah';
 
 async function fetchWilayah(url) {
     try {
