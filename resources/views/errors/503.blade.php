@@ -325,16 +325,25 @@
 <script>
 
 
-const targetTime = new Date('{{ now()->addHours(2)->toIso8601String() }}');
+const retrySeconds = {{ request()->header('Retry-After', 7200) }};
+
+
+const downSince = {{ file_exists(storage_path('framework/down'))
+    ? filemtime(storage_path('framework/down')) * 1000
+    : round(microtime(true) * 1000) }};
+
+const targetTime = new Date(downSince + (retrySeconds * 1000));
 
 function updateCountdown() {
-    const now  = new Date();
+    const now = new Date().getTime();
     const diff = targetTime - now;
 
     if (diff <= 0) {
         document.getElementById('cd-h').textContent = '00';
         document.getElementById('cd-m').textContent = '00';
         document.getElementById('cd-s').textContent = '00';
+
+        setTimeout(() => location.reload(), 3000);
         return;
     }
 
@@ -350,9 +359,12 @@ function updateCountdown() {
 updateCountdown();
 setInterval(updateCountdown, 1000);
 
+
 function submitNotify() {
     const email = document.getElementById('notifyEmail').value;
+
     if (!email || !email.includes('@')) return;
+
     document.getElementById('notifySuccess').style.display = 'block';
     document.getElementById('notifyEmail').value = '';
     document.querySelector('.notify-btn').textContent = '✓ Tersimpan';
