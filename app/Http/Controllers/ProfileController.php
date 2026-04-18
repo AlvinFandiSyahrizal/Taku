@@ -65,30 +65,54 @@ class ProfileController extends Controller
     public function storeAddress(Request $request)
     {
         $request->validate([
-            'label'     => 'required|string|max:50',
-            'recipient' => 'required|string|max:100',
-            'phone'     => 'required|string|max:20',
-            'address'   => 'required|string|max:500',
-            'city'      => 'nullable|string|max:100',
+            'label'          => 'required|string|max:50',
+            'recipient'      => 'required|string|max:100',
+            'phone'          => 'required|string|max:25',
+            'province_code'  => 'required|string',
+            'province_name'  => 'required|string',
+            'regency_code'   => 'required|string',
+            'regency_name'   => 'required|string',
+            'district_code'  => 'required|string',
+            'district_name'  => 'required|string',
+            'village_name'   => 'nullable|string',
+            'street'         => 'required|string|max:300',
+            'postal_code'    => 'nullable|string|max:10',
         ]);
 
-        $user = Auth::user();
+        $user    = Auth::user();
         $isFirst = $user->addresses()->count() === 0;
 
         if ($request->boolean('is_default') || $isFirst) {
             $user->addresses()->update(['is_default' => false]);
         }
 
-        $user->addresses()->create([
-            'label'      => $request->label,
-            'recipient'  => $request->recipient,
-            'phone'      => $request->phone,
-            'address'    => $request->address,
-            'city'       => $request->city,
-            'is_default' => $request->boolean('is_default') || $isFirst,
+        // Susun alamat lengkap
+        $addressParts = array_filter([
+            $request->street,
+            $request->village_name,
+            $request->district_name,
+            $request->regency_name,
+            $request->province_name,
+            $request->postal_code,
         ]);
 
-        return back()->with('success', 'Alamat berhasil ditambahkan.');
+        $user->addresses()->create([
+            'label'         => $request->label,
+            'recipient'     => $request->recipient,
+            'phone'         => $request->phone,
+            'address'       => implode(', ', $addressParts),
+            'city'          => $request->regency_name,
+            'province'      => $request->province_name,
+            'district'      => $request->district_name,
+            'village'       => $request->village_name,
+            'postal_code'   => $request->postal_code,
+            'province_code' => $request->province_code,
+            'regency_code'  => $request->regency_code,
+            'district_code' => $request->district_code,
+            'is_default'    => $request->boolean('is_default') || $isFirst,
+        ]);
+
+        return back()->with('success', 'Alamat berhasil ditambahkan.')->with('active_tab', 'alamat');
     }
 
     public function setDefault(UserAddress $address)

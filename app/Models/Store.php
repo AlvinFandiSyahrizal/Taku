@@ -11,7 +11,8 @@ class Store extends Model
         'user_id', 'name', 'slug', 'description', 'phone', 'logo',
         'status', 'reject_reason', 'approved_at',
         'rejection_count', 'rejected_at', 'resubmitted_at',
-        'city', 'agreed_terms',
+        'city', 'address', 'province', 'district', 'village', 'postal_code',
+        'agreed_terms',
     ];
 
     protected $casts = [

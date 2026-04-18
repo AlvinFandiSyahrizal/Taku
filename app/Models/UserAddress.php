@@ -4,7 +4,12 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 
 class UserAddress extends Model {
-    protected $fillable = ['user_id','label','recipient','phone','address','city','is_default'];
+    protected $fillable = [
+        'user_id', 'label', 'recipient', 'phone', 'address', 'city',
+        'province', 'district', 'village', 'postal_code',
+        'province_code', 'regency_code', 'district_code',
+        'is_default',
+    ];
     protected $casts = ['is_default' => 'boolean'];
 
     public function user() { return $this->belongsTo(User::class); }

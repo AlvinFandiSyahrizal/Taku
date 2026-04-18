@@ -22,7 +22,6 @@ class StoreController extends Controller
     public function store(Request $request)
     {
         $store = Auth::user()->store;
-
         if ($store) {
             if ($store->isActive()) return redirect()->route('merchant.dashboard');
             return redirect()->route('store.pending');
@@ -31,36 +30,52 @@ class StoreController extends Controller
         $request->validate([
             'name'        => 'required|string|max:100|unique:stores,name',
             'phone'       => 'required|string|max:20',
-            'city'        => 'required|string|max:100',
             'description' => 'required|string|min:30|max:500',
+            'province'    => 'required|string',
+            'regency'     => 'required|string',
+            'district'    => 'required|string',
+            'village'     => 'nullable|string',
+            'street'      => 'required|string|max:200',
+            'building_no' => 'nullable|string|max:50',
+            'rt_rw'       => 'nullable|string|max:20',
+            'postal_code' => 'nullable|string|max:10',
             'agreed_terms'=> 'accepted',
         ], [
             'agreed_terms.accepted' => 'Kamu harus menyetujui syarat dan ketentuan.',
             'description.min'       => 'Deskripsi minimal 30 karakter.',
-            'phone.required'        => 'Nomor WhatsApp wajib diisi.',
-            'city.required'         => 'Kota wajib diisi.',
+            'province.required'     => 'Provinsi wajib dipilih.',
+            'regency.required'      => 'Kabupaten/Kota wajib dipilih.',
+            'district.required'     => 'Kecamatan wajib dipilih.',
+            'street.required'       => 'Nama jalan wajib diisi.',
         ]);
+
+        // Susun alamat lengkap
+        $parts = array_filter([
+            $request->street,
+            $request->building_no ? 'No. ' . $request->building_no : null,
+            $request->rt_rw       ? 'RT/RW ' . $request->rt_rw     : null,
+        ]);
+        $fullAddress = implode(', ', $parts);
+
+        $city = $request->regency_name ?: $request->city;
 
         Store::create([
-            'user_id'     => Auth::id(),
-            'name'        => $request->name,
-            'description' => $request->description,
-            'phone'       => $request->phone,
-            'city'        => $request->city,
-            'agreed_terms'=> true,
-            'status'      => 'pending',
-        ]);
-
-                \App\Models\Notification::create([
-            'store_id' => null, 
-            'type'     => 'store_registered',
-            'title'    => 'Pendaftaran Toko Baru',
-            'body'     => "Toko \"{$request->name}\" mendaftar dan menunggu approval.",
-            'data'     => ['store_name' => $request->name],
+            'user_id'      => Auth::id(),
+            'name'         => $request->name,
+            'description'  => $request->description,
+            'phone'        => $request->phone,
+            'city'         => $city,
+            'address'      => $fullAddress,        
+            'province'     => $request->province_name,
+            'district'     => $request->district_name,
+            'village'      => $request->village_name,
+            'postal_code'  => $request->postal_code,
+            'agreed_terms' => true,
+            'status'       => 'pending',
         ]);
 
         return redirect()->route('store.pending');
-    }
+}
 
     public function pending()
     {

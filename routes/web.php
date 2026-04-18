@@ -37,8 +37,6 @@ use App\Http\Controllers\Admin\NotificationController as AdminNotificationContro
 
 
 
-
-
 // Language
 Route::get('/lang/{lang}', [LanguageController::class, 'switch'])->name('lang.switch');
 
@@ -56,35 +54,35 @@ Route::get('/toko/{slug}', [StoreController::class, 'show'])->name('store.show')
 Route::get('/email/verify', function () {
     $user      = auth()->user();
     $sisaDetik = 0;
- 
+
     if ($user && $user->email_resend_at) {
-        $cooldownDetik  = 30 * 60; 
+        $cooldownDetik  = 30 * 60;
 
         $sudahBerlalu   = now()->timestamp - $user->email_resend_at->timestamp;
 
         $sisaDetik      = max(0, $cooldownDetik - $sudahBerlalu);
     }
- 
+
     return view('auth.verify-email', compact('sisaDetik'));
 })->middleware('auth')->name('verification.notice');
- 
- 
+
+
 Route::get('/email/verify/{id}/{hash}', function (EmailVerificationRequest $request) {
     $request->fulfill();
     return redirect()->route('home')
         ->with('success', 'Email berhasil diverifikasi! Selamat berbelanja.');
 })->middleware(['auth', 'signed'])->name('verification.verify');
- 
- 
+
+
 Route::post('/email/verification-notification', function (\Illuminate\Http\Request $request) {
     $user = $request->user();
- 
+
     if ($user->hasVerifiedEmail()) {
         return redirect()->route('home');
     }
- 
+
     $cooldownDetik = 30 * 60;
- 
+
     if ($user->email_resend_at) {
         $sudahBerlalu = now()->timestamp - $user->email_resend_at->timestamp;
         if ($sudahBerlalu < $cooldownDetik) {
@@ -92,13 +90,13 @@ Route::post('/email/verification-notification', function (\Illuminate\Http\Reque
                 ->with('warning', 'Kamu baru saja mengirim verifikasi. Tunggu sebentar sebelum mengirim ulang.');
         }
     }
- 
+
     $user->update(['email_resend_at' => now()]);
     $user->sendEmailVerificationNotification();
- 
+
     return redirect()->route('verification.notice')
         ->with('success', 'Link verifikasi sudah dikirim ulang. Cek inbox atau folder spam.');
- 
+
 })->middleware(['auth', 'throttle:6,1'])->name('verification.send');
 
 
@@ -110,8 +108,19 @@ Route::get('/forgot-password', function () {
 
 Route::post('/forgot-password', function (\Illuminate\Http\Request $request) {
     $request->validate(['email' => 'required|email']);
-    $status = Password::sendResetLink($request->only('email'));
-    return $status === Password::RESET_LINK_SENT
+
+    $throttleKey = 'password-reset:' . $request->email;
+    if (\Illuminate\Support\Facades\RateLimiter::tooManyAttempts($throttleKey, 1)) {
+        $seconds = \Illuminate\Support\Facades\RateLimiter::availableIn($throttleKey);
+        return back()->withErrors([
+            'email' => "Tunggu {$seconds} detik sebelum meminta link reset lagi."
+        ]);
+    }
+    \Illuminate\Support\Facades\RateLimiter::hit($throttleKey, 30); // 30 detik cooldown
+
+    $status = \Illuminate\Support\Facades\Password::sendResetLink($request->only('email'));
+
+    return $status === \Illuminate\Support\Facades\Password::RESET_LINK_SENT
         ? back()->with('success', 'Link reset password sudah dikirim ke email kamu.')
         : back()->withErrors(['email' => __($status)]);
 })->name('password.email');
@@ -138,6 +147,25 @@ Route::post('/reset-password', function (\Illuminate\Http\Request $request) {
         ? redirect()->route('login')->with('success', 'Password berhasil direset. Silakan login.')
         : back()->withErrors(['email' => __($status)]);
 })->name('password.update');
+
+
+Route::get('/api/wilayah/{path}', function (string $path) {
+    $allowed = ['provinces', 'regencies', 'districts', 'villages'];
+    $segment = explode('/', $path)[0];
+    if (!in_array($segment, $allowed)) abort(404);
+
+    $response = \Illuminate\Support\Facades\Http::timeout(10)
+        ->get("https://wilayah.id/api/{$path}.json");
+
+    if (!$response->ok()) {
+        return response()->json(['data' => []]);
+    }
+
+    return response($response->body())
+        ->header('Content-Type', 'application/json')
+        ->header('Cache-Control', 'public, max-age=86400');
+})->where('path', '.*')->name('api.wilayah');
+
 
 
 // Auth
@@ -283,7 +311,7 @@ Route::middleware(['auth', \App\Http\Middleware\IsAdmin::class])
 
 // Merchant (wajib login + merchant)
 Route::middleware('auth')->group(function () {
- 
+
     // Daftar toko — wajib verifikasi email
     Route::get('/store/register', function () {
         if (!auth()->user()->hasVerifiedEmail()) {
@@ -293,7 +321,7 @@ Route::middleware('auth')->group(function () {
         return app(\App\Http\Controllers\StoreController::class)
             ->create(request());
     })->name('store.register');
- 
+
     Route::post('/store/register', function (\Illuminate\Http\Request $request) {
         if (!auth()->user()->hasVerifiedEmail()) {
             return redirect()->route('verification.notice')
@@ -302,7 +330,7 @@ Route::middleware('auth')->group(function () {
         return app(\App\Http\Controllers\StoreController::class)
             ->store($request);
     })->name('store.register.post');
- 
+
     Route::get('/store/pending', [\App\Http\Controllers\StoreController::class, 'pending'])->name('store.pending');
     Route::get('/store/edit', [\App\Http\Controllers\StoreController::class, 'edit'])->name('store.edit');
     Route::post('/store/resubmit', [\App\Http\Controllers\StoreController::class, 'resubmit'])->name('store.resubmit');

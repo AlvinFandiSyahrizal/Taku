@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\Store;
 use Illuminate\Http\Request;
+use App\Services\MerchantNotifService;
 
 class StoreController extends Controller
 {
@@ -31,22 +32,24 @@ class StoreController extends Controller
 
         $store->user->update(['role' => 'merchant']);
 
-        return back()->with('success', "Toko \"{$store->name}\" berhasil disetujui.");
+        app(MerchantNotifService::class)->sendApproved($store);
+
+        return back()->with('success', "Toko \"{$store->name}\" disetujui.");
     }
 
     public function reject(Request $request, Store $store)
     {
         $request->validate(['reason' => 'required|string|max:300']);
 
-        $newCount = $store->rejection_count + 1;
-
         $store->update([
             'status'          => 'pending',
             'reject_reason'   => $request->reason,
-            'rejection_count' => $newCount,
             'rejected_at'     => now(),
+            'rejection_count' => $store->rejection_count + 1,
             'resubmitted_at'  => null,
         ]);
+
+        app(MerchantNotifService::class)->sendRejected($store, $request->reason);
 
         return back()->with('success', "Pengajuan toko \"{$store->name}\" ditolak.");
     }
@@ -54,10 +57,11 @@ class StoreController extends Controller
     public function ban(Store $store)
     {
         $store->update(['status' => 'banned']);
-
         $store->user->update(['role' => 'user']);
 
-        return back()->with('success', "Toko \"{$store->name}\" telah dibanned.");
+        app(MerchantNotifService::class)->sendBanned($store);
+
+        return back()->with('success', "Toko \"{$store->name}\" dibanned.");
     }
 
     public function showOfficial(Request $request)

@@ -181,40 +181,112 @@
 
                 <div class="card">
                     <p class="card-title">Tambah Alamat Baru</p>
-                    <form action="{{ route('addresses.store') }}" method="POST">
+                    <form action="{{ route('addresses.store') }}" method="POST" id="addAddrForm">
                         @csrf
+
                         <div class="form-row">
                             <div class="form-group">
                                 <label class="form-label">Label *</label>
-                                <input type="text" name="label" class="form-input" placeholder="Rumah / Kantor / dll" required>
+                                <input type="text" name="label" class="form-input"
+                                    placeholder="Rumah / Kantor / dll" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label">Nama Penerima *</label>
-                                <input type="text" name="recipient" class="form-input" placeholder="Nama lengkap penerima" required>
+                                <input type="text" name="recipient" class="form-input"
+                                    placeholder="Nama lengkap penerima" required>
                             </div>
                         </div>
+
+                        <div class="form-group">
+                            <label class="form-label">No. HP Penerima *</label>
+                            @php
+                                $addrPhoneVal = '';
+                                $addrPhoneCode = '+62';
+                                $addrPhoneNum  = '';
+                            @endphp
+                            <div style="display:flex;border:.5px solid rgba(11,42,74,.15);border-radius:8px;overflow:hidden;">
+                                <select id="addrPhoneCode"
+                                        style="padding:9px 8px;border:none;outline:none;background:#f9f7f4;font-size:13px;color:#0b2a4a;font-family:'DM Sans',sans-serif;border-right:.5px solid rgba(11,42,74,.1);flex-shrink:0;cursor:pointer;"
+                                        onchange="combineAddrPhone()">
+                                    <option value="+62">🇮🇩 +62</option>
+                                    <option value="+60">🇲🇾 +60</option>
+                                    <option value="+65">🇸🇬 +65</option>
+                                    <option value="+63">🇵🇭 +63</option>
+                                    <option value="+66">🇹🇭 +66</option>
+                                    <option value="+84">🇻🇳 +84</option>
+                                    <option value="+1">🇺🇸 +1</option>
+                                </select>
+                                <input type="text" id="addrPhoneNum"
+                                    style="flex:1;padding:9px 12px;border:none;outline:none;font-size:13px;color:#0b2a4a;font-family:'DM Sans',sans-serif;background:white;"
+                                    placeholder="85xxxxxxxxx"
+                                    oninput="this.value=this.value.replace(/[^0-9]/g,'');combineAddrPhone()"
+                                    required>
+                            </div>
+                            <input type="hidden" name="phone" id="addrPhoneFull">
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Provinsi *</label>
+                            <select name="province_code" id="addrProvince" class="form-input"
+                                    onchange="addrLoadRegencies(this.value)" required>
+                                <option value="">— Pilih Provinsi —</option>
+                            </select>
+                            <input type="hidden" name="province_name" id="addrProvinceName">
+                            <p id="addrLoadingProvince" style="font-size:11px;color:rgba(11,42,74,.4);margin-top:4px;display:none;">Memuat...</p>
+                        </div>
+
                         <div class="form-row">
                             <div class="form-group">
-                                <label class="form-label">No. HP Penerima *</label>
-                                <x-phone-input name="phone" placeholder="85xxxxxxxxx" :required="true" />
+                                <label class="form-label">Kabupaten / Kota *</label>
+                                <select name="regency_code" id="addrRegency" class="form-input"
+                                        onchange="addrLoadDistricts(this.value)" required disabled>
+                                    <option value="">— Pilih provinsi dulu —</option>
+                                </select>
+                                <input type="hidden" name="regency_name" id="addrRegencyName">
                             </div>
                             <div class="form-group">
-                                <label class="form-label">Kota</label>
-                                <input type="text" name="city" class="form-input" placeholder="Jakarta">
+                                <label class="form-label">Kecamatan *</label>
+                                <select name="district_code" id="addrDistrict" class="form-input"
+                                        onchange="addrLoadVillages(this.value)" required disabled>
+                                    <option value="">— Pilih kabupaten dulu —</option>
+                                </select>
+                                <input type="hidden" name="district_name" id="addrDistrictName">
                             </div>
                         </div>
-                        <div class="form-group">
-                            <label class="form-label">Alamat Lengkap *</label>
-                            <textarea name="address" class="form-textarea" placeholder="Jl. Contoh No. 10, RT/RW, Kelurahan, Kecamatan" required></textarea>
+
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label class="form-label">Kelurahan / Desa</label>
+                                <select name="village_code" id="addrVillage" class="form-input" disabled>
+                                    <option value="">— Pilih kecamatan dulu —</option>
+                                </select>
+                                <input type="hidden" name="village_name" id="addrVillageName">
+                            </div>
+                            <div class="form-group">
+                                <label class="form-label">Kode Pos</label>
+                                <input type="text" name="postal_code" class="form-input"
+                                    placeholder="12345" maxlength="5"
+                                    oninput="this.value=this.value.replace(/[^0-9]/g,'')">
+                            </div>
                         </div>
+
+                        <div class="form-group">
+                            <label class="form-label">Nama Jalan / Gedung *</label>
+                            <input type="text" name="street" class="form-input"
+                                placeholder="Jl. Sudirman No. 10, RT 001/002" required>
+                        </div>
+
                         <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
                             <input type="checkbox" name="is_default" id="isDefault" style="accent-color:#0b2a4a;">
-                            <label for="isDefault" style="font-size:13px;color:rgba(11,42,74,.6);cursor:pointer;">Jadikan alamat utama</label>
+                            <label for="isDefault" style="font-size:13px;color:rgba(11,42,74,.6);cursor:pointer;">
+                                Jadikan alamat utama
+                            </label>
                         </div>
+
                         <button type="submit" class="btn-save">Simpan Alamat</button>
                     </form>
                 </div>
-            </div>
+
 
             <div id="tab-password" style="display:none;">
                 <div class="card">
@@ -241,6 +313,87 @@
         </div>
     </div>
 </div>
+
+<script>
+function combineAddrPhone() {
+    const code = document.getElementById('addrPhoneCode').value;
+    const num  = document.getElementById('addrPhoneNum').value.replace(/\D/g,'');
+    document.getElementById('addrPhoneFull').value = num ? (code + num) : '';
+}
+document.getElementById('addAddrForm').addEventListener('submit', combineAddrPhone);
+
+async function addrFetch(path) {
+    try {
+        const r = await fetch('/api/wilayah/' + path);
+        const j = await r.json();
+        return j.data ?? [];
+    } catch { return []; }
+}
+
+function addrSetOptions(id, data, valKey, labelKey, placeholder) {
+    const sel = document.getElementById(id);
+    sel.innerHTML = `<option value="">${placeholder}</option>`;
+    data.forEach(item => {
+        const o = document.createElement('option');
+        o.value = item[valKey];
+        o.textContent = item[labelKey];
+        sel.appendChild(o);
+    });
+    sel.disabled = data.length === 0;
+}
+
+(async function() {
+    document.getElementById('addrLoadingProvince').style.display = 'block';
+    const data = await addrFetch('provinces');
+    document.getElementById('addrLoadingProvince').style.display = 'none';
+    addrSetOptions('addrProvince', data, 'code', 'name', '— Pilih Provinsi —');
+})();
+
+async function addrLoadRegencies(code) {
+    const sel = document.getElementById('addrProvince');
+    document.getElementById('addrProvinceName').value =
+        sel.options[sel.selectedIndex]?.text || '';
+
+    addrSetOptions('addrRegency',  [], 'code', 'name', '— Memuat... —');
+    addrSetOptions('addrDistrict', [], 'code', 'name', '— Pilih kabupaten dulu —');
+    addrSetOptions('addrVillage',  [], 'code', 'name', '— Pilih kecamatan dulu —');
+    document.getElementById('addrDistrict').disabled = true;
+    document.getElementById('addrVillage').disabled  = true;
+
+    if (!code) { document.getElementById('addrRegency').disabled = true; return; }
+    const data = await addrFetch('regencies/' + code);
+    addrSetOptions('addrRegency', data, 'code', 'name', '— Pilih Kabupaten/Kota —');
+}
+
+async function addrLoadDistricts(code) {
+    const sel = document.getElementById('addrRegency');
+    document.getElementById('addrRegencyName').value =
+        sel.options[sel.selectedIndex]?.text || '';
+
+    addrSetOptions('addrDistrict', [], 'code', 'name', '— Memuat... —');
+    addrSetOptions('addrVillage',  [], 'code', 'name', '— Pilih kecamatan dulu —');
+    document.getElementById('addrVillage').disabled = true;
+
+    if (!code) { document.getElementById('addrDistrict').disabled = true; return; }
+    const data = await addrFetch('districts/' + code);
+    addrSetOptions('addrDistrict', data, 'code', 'name', '— Pilih Kecamatan —');
+}
+
+async function addrLoadVillages(code) {
+    const sel = document.getElementById('addrDistrict');
+    document.getElementById('addrDistrictName').value =
+        sel.options[sel.selectedIndex]?.text || '';
+
+    if (!code) { document.getElementById('addrVillage').disabled = true; return; }
+    const data = await addrFetch('villages/' + code);
+    addrSetOptions('addrVillage', data, 'code', 'name', '— Pilih Kelurahan/Desa —');
+}
+
+document.getElementById('addrVillage').addEventListener('change', function() {
+    document.getElementById('addrVillageName').value =
+        this.options[this.selectedIndex]?.text || '';
+});
+</script>
 
 <script>
 function showTab(tab, el) {
