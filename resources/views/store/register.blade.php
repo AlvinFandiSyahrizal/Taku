@@ -280,16 +280,16 @@ function updateSubmit() {
     document.getElementById('submitBtn').disabled = !(terms && desc && prov && street);
 }
 
-// ── Wilayah.id API ────────────────────────────────────────────────
 const BASE = '/api/wilayah';
 
-async function fetchWilayah(url) {
+async function fetchWilayah(path) {
     try {
-        const res = await fetch(url);
-        if (!res.ok) throw new Error('Gagal');
+        const res = await fetch(BASE + '/' + path);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
         const json = await res.json();
         return json.data ?? [];
     } catch (e) {
+        console.error('Wilayah fetch error:', e);
         return [];
     }
 }
@@ -306,14 +306,12 @@ function setSelectOptions(selectId, data, valueKey, labelKey, placeholder) {
     sel.disabled = data.length === 0;
 }
 
-// Load provinsi saat halaman buka
 (async function loadProvinces() {
     document.getElementById('loadingProvince').style.display = 'block';
-    const data = await fetchWilayah(`${BASE}/provinces.json`);
+    const data = await fetchWilayah('provinces');
     document.getElementById('loadingProvince').style.display = 'none';
     setSelectOptions('provinceSelect', data, 'code', 'name', '— Pilih Provinsi —');
 
-    // Restore old value
     const old = '{{ old('province') }}';
     if (old) {
         document.getElementById('provinceSelect').value = old;
@@ -322,11 +320,9 @@ function setSelectOptions(selectId, data, valueKey, labelKey, placeholder) {
 })();
 
 async function loadRegencies(provCode, oldVal = '') {
-    // Simpan nama provinsi
     const sel = document.getElementById('provinceSelect');
     document.getElementById('provinceName').value = sel.options[sel.selectedIndex]?.text || '';
 
-    // Reset bawahan
     setSelectOptions('regencySelect',  [], 'code', 'name', '— Memuat... —');
     setSelectOptions('districtSelect', [], 'code', 'name', '— Pilih dulu kabupaten —');
     setSelectOptions('villageSelect',  [], 'code', 'name', '— Pilih dulu kecamatan —');
@@ -336,7 +332,7 @@ async function loadRegencies(provCode, oldVal = '') {
 
     if (!provCode) return;
 
-    const data = await fetchWilayah(`${BASE}/regencies/${provCode}.json`);
+    const data = await fetchWilayah('regencies/' + provCode);
     setSelectOptions('regencySelect', data, 'code', 'name', '— Pilih Kabupaten/Kota —');
     document.getElementById('regencySelect').disabled = false;
 
@@ -358,7 +354,7 @@ async function loadDistricts(regCode, oldVal = '') {
 
     if (!regCode) return;
 
-    const data = await fetchWilayah(`${BASE}/districts/${regCode}.json`);
+    const data = await fetchWilayah('districts/' + regCode);
     setSelectOptions('districtSelect', data, 'code', 'name', '— Pilih Kecamatan —');
     document.getElementById('districtSelect').disabled = false;
 
@@ -377,7 +373,7 @@ async function loadVillages(distCode, oldVal = '') {
 
     if (!distCode) return;
 
-    const data = await fetchWilayah(`${BASE}/villages/${distCode}.json`);
+    const data = await fetchWilayah('villages/' + distCode);
     setSelectOptions('villageSelect', data, 'code', 'name', '— Pilih Kelurahan/Desa —');
     document.getElementById('villageSelect').disabled = false;
 

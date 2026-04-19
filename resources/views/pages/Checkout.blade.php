@@ -119,6 +119,11 @@
                     <input type="radio" name="use_address" value="new" style="accent-color:#0b2a4a;" onchange="clearAddress()">
                     <span style="font-size:12px;color:rgba(11,42,74,.5);">+ Masukkan alamat baru</span>
                 </label>
+                <p style="font-size:11px;color:rgba(11,42,74,.4);margin-top:6px;padding:0 4px;">
+                    💡 Mau simpan alamat? 
+                    <a href="{{ route('profile') }}#alamat" style="color:#0b2a4a;font-weight:500;">Tambah di profil</a>
+                    agar bisa dipakai lagi next order.
+                </p>
             </div>
             <div style="height:.5px;background:rgba(11,42,74,.08);margin:4px 0 20px;"></div>
             @endif
@@ -275,22 +280,22 @@ function selectNew(label) {
 function fillAddress(name, phone, address) {
     document.querySelector('[name="name"]').value = name;
 
-    const coPhoneEl = document.getElementById('coPhoneFull');
-    const numEl     = document.getElementById('coPhoneNum');
-    const codeEl    = document.getElementById('coPhoneCode');
+    const codes = ['+62','+60','+65','+63','+66','+84','+1','+44','+61'];
+    const codeEl = document.getElementById('coPhoneCode');
+    const numEl  = document.getElementById('coPhoneNum');
 
-    const codes = ['+62','+60','+65','+63','+66','+84','+1'];
     let matched = false;
     for (const c of codes) {
         if (phone.startsWith(c)) {
             codeEl.value = c;
-            numEl.value  = phone.slice(c.length);
-            matched = true; break;
+            numEl.value  = phone.slice(c.length).replace(/\D/g,'');
+            matched = true;
+            break;
         }
     }
-    if (!matched) {
+    if (!matched && phone) {
         codeEl.value = '+62';
-        numEl.value  = phone.replace(/^0/, '');
+        numEl.value  = phone.replace(/^0+/,'').replace(/\D/g,'');
     }
     combineCoPhone();
 

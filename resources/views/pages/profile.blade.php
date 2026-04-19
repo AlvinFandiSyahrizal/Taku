@@ -286,6 +286,8 @@
                         <button type="submit" class="btn-save">Simpan Alamat</button>
                     </form>
                 </div>
+            </div>
+
 
 
             <div id="tab-password" style="display:none;">
@@ -313,6 +315,7 @@
         </div>
     </div>
 </div>
+
 
 <script>
 function combineAddrPhone() {
@@ -395,19 +398,27 @@ document.getElementById('addrVillage').addEventListener('change', function() {
 });
 </script>
 
+
 <script>
+
 function showTab(tab, el) {
     ['profil','alamat','password'].forEach(t => {
-        document.getElementById('tab-'+t).style.display = t === tab ? 'block' : 'none';
+        const tabEl = document.getElementById('tab-'+t);
+        if (tabEl) tabEl.style.display = t === tab ? 'block' : 'none';
     });
     document.querySelectorAll('.profile-nav-item').forEach(a => a.classList.remove('active'));
-    el.classList.add('active');
+    if (el) el.classList.add('active');
+    history.replaceState(null, '', '#' + tab);
 }
-const hash = location.hash.replace('#','');
-if (['profil','alamat','password'].includes(hash)) {
-    const el = document.querySelector(`[href="#${hash}"]`);
-    if (el) showTab(hash, el);
-}
+
+document.addEventListener('DOMContentLoaded', function() {
+    const hash = location.hash.replace('#','');
+    const validTabs = ['profil','alamat','password'];
+    if (validTabs.includes(hash)) {
+        const navEl = document.getElementById('nav-' + hash);
+        showTab(hash, navEl);
+    }
+});
 </script>
 
 @endsection

@@ -150,12 +150,14 @@ Route::post('/reset-password', function (\Illuminate\Http\Request $request) {
 
 
 Route::get('/api/wilayah/{path}', function (string $path) {
+    $cleanPath = str_replace('.json', '', $path);
+    
     $allowed = ['provinces', 'regencies', 'districts', 'villages'];
-    $segment = explode('/', $path)[0];
+    $segment = explode('/', $cleanPath)[0];
     if (!in_array($segment, $allowed)) abort(404);
 
-    $response = \Illuminate\Support\Facades\Http::timeout(10)
-        ->get("https://wilayah.id/api/{$path}.json");
+    $response = \Illuminate\Support\Facades\Http::timeout(15)
+        ->get("https://wilayah.id/api/{$cleanPath}.json");
 
     if (!$response->ok()) {
         return response()->json(['data' => []]);
@@ -165,7 +167,6 @@ Route::get('/api/wilayah/{path}', function (string $path) {
         ->header('Content-Type', 'application/json')
         ->header('Cache-Control', 'public, max-age=86400');
 })->where('path', '.*')->name('api.wilayah');
-
 
 
 // Auth
