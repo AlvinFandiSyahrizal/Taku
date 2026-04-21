@@ -17,11 +17,11 @@ class StoreSectionController extends Controller
         ]);
 
         StoreSection::create([
-            'store_id'   => null, 
+            'store_id'   => null,
             'title'      => $request->title,
             'subtitle'   => $request->subtitle,
             'rows'       => $request->rows,
-            'auto_slide' => $request->boolean('auto_slide'),
+            'auto_slide' => $request->has('auto_slide'), 
             'is_active'  => true,
             'sort'       => StoreSection::whereNull('store_id')->max('sort') + 1,
         ]);
@@ -41,7 +41,7 @@ class StoreSectionController extends Controller
             'title'      => $request->title,
             'subtitle'   => $request->subtitle,
             'rows'       => $request->rows,
-            'auto_slide' => $request->boolean('auto_slide'),
+            'auto_slide' => $request->has('auto_slide'), 
         ]);
 
         return back()->with('success', 'Section diupdate.');

@@ -1,7 +1,12 @@
 <?php
+
 namespace App\Http\Controllers;
 
 use App\Models\Store;
+use App\Models\StoreBanner;
+use App\Models\StoreSection;
+use App\Models\Product;
+use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -10,12 +15,10 @@ class StoreController extends Controller
     public function create()
     {
         $store = Auth::user()->store;
-
         if ($store) {
             if ($store->isActive()) return redirect()->route('merchant.dashboard');
             return redirect()->route('store.pending');
         }
-
         return view('store.register');
     }
 
@@ -49,23 +52,19 @@ class StoreController extends Controller
             'street.required'       => 'Nama jalan wajib diisi.',
         ]);
 
-        // Susun alamat lengkap
         $parts = array_filter([
             $request->street,
             $request->building_no ? 'No. ' . $request->building_no : null,
             $request->rt_rw       ? 'RT/RW ' . $request->rt_rw     : null,
         ]);
-        $fullAddress = implode(', ', $parts);
-
-        $city = $request->regency_name ?: $request->city;
 
         Store::create([
             'user_id'      => Auth::id(),
             'name'         => $request->name,
             'description'  => $request->description,
             'phone'        => $request->phone,
-            'city'         => $city,
-            'address'      => $fullAddress,        
+            'city'         => $request->regency_name ?: $request->city,
+            'address'      => implode(', ', $parts),
             'province'     => $request->province_name,
             'district'     => $request->district_name,
             'village'      => $request->village_name,
@@ -75,7 +74,7 @@ class StoreController extends Controller
         ]);
 
         return redirect()->route('store.pending');
-}
+    }
 
     public function pending()
     {
@@ -84,6 +83,7 @@ class StoreController extends Controller
         if ($store->isActive()) return redirect()->route('merchant.dashboard');
         return view('store.pending', compact('store'));
     }
+
     public function edit()
     {
         $store = Auth::user()->store;
@@ -103,55 +103,113 @@ class StoreController extends Controller
         ]);
 
         $store->update([
-            'phone'           => $request->phone,
-            'city'            => $request->city,
-            'description'     => $request->description,
-            'reject_reason'   => null,
-            'resubmitted_at'  => now(),
+            'phone'          => $request->phone,
+            'city'           => $request->city,
+            'description'    => $request->description,
+            'reject_reason'  => null,
+            'resubmitted_at' => now(),
         ]);
 
         return redirect()->route('store.pending')
             ->with('success', 'Pengajuan toko kamu sudah diperbarui dan menunggu review ulang.');
     }
+
     public function cancel()
     {
         $store = Auth::user()->store;
         if (!$store || $store->isActive()) abort(403);
         $store->delete();
-        return redirect()->route('home')
-            ->with('success', 'Pengajuan toko dibatalkan.');
+        return redirect()->route('home')->with('success', 'Pengajuan toko dibatalkan.');
     }
 
-    public function show($slug)
+    // ─────────────────────────────────────────────────────────────────────────
+    // STORE SHOW (Merchant Store)
+    // ─────────────────────────────────────────────────────────────────────────
+    public function show(Request $request, $slug)
     {
         $store = Store::where('slug', $slug)->where('status', 'active')->firstOrFail();
 
-        $products = \App\Models\Product::where('store_id', $store->id)
+        $perPage     = 20;
+        $categorySlug = $request->get('category');
+        $subSlug      = $request->get('sub');
+        $sort         = $request->get('sort', 'latest');
+
+        // ── Kategori sidebar: parent categories yang punya produk di toko ini
+        $allProducts = Product::where('store_id', $store->id)
             ->where('is_active', true)
-            ->with('images', 'category')
-            ->latest()->get();
+            ->pluck('category_id')
+            ->filter()
+            ->unique()
+            ->values();
 
-        $categories = $products->pluck('category')->filter()->unique('id')->values();
+        // Ambil kategori parent yang punya produk (langsung atau via anak)
+        $sidebarCategories = Category::with(['children' => function ($q) use ($allProducts) {
+                $q->whereIn('id', $allProducts)->active()->orderBy('sort');
+            }])
+            ->whereNull('parent_id')
+            ->active()
+            ->where(function ($q) use ($allProducts) {
+                // parent langsung punya produk ATAU punya anak yang punya produk
+                $q->whereIn('id', $allProducts)
+                  ->orWhereHas('children', fn($c) => $c->whereIn('id', $allProducts));
+            })
+            ->orderBy('sort')
+            ->get();
 
-        try {
-            $banners = \App\Models\StoreBanner::where('store_id', $store->id)
-                ->where('is_active', true)->orderBy('sort')->get();
-        } catch (\Exception $e) {
-            $banners = collect();
+        // ── Query produk utama (untuk katalog & pagination)
+        $productQuery = Product::where('store_id', $store->id)
+            ->where('is_active', true)
+            ->with('images', 'category');
+
+        // Filter kategori
+        if ($subSlug) {
+            $productQuery->whereHas('category', fn($q) => $q->where('slug', $subSlug));
+        } elseif ($categorySlug) {
+            $productQuery->whereHas('category', function ($q) use ($categorySlug) {
+                $q->where('slug', $categorySlug)
+                  ->orWhereHas('parent', fn($p) => $p->where('slug', $categorySlug));
+            });
         }
 
-        try {
-            $sections = \App\Models\StoreSection::where('store_id', $store->id)
-                ->where('is_active', true)
-                ->with(['products' => fn($q) => $q->where('is_active', true)->with('images')])
-                ->orderBy('sort')->get();
-        } catch (\Exception $e) {
-            $sections = collect();
-        }
+        // Sort
+        match ($sort) {
+            'oldest'    => $productQuery->oldest(),
+            'price_asc' => $productQuery->orderBy('price'),
+            'price_desc'=> $productQuery->orderByDesc('price'),
+            'name'      => $productQuery->orderBy('name'),
+            default     => $productQuery->latest(),
+        };
 
-        return view('pages.store', compact('store', 'products', 'categories', 'banners', 'sections'));
+        $products    = $productQuery->paginate($perPage)->withQueryString();
+        $totalProducts = Product::where('store_id', $store->id)->where('is_active', true)->count();
+
+        // ── Banners per position
+        $bannersTop           = StoreBanner::where('store_id', $store->id)->active()->where('position', 'top')->orderBy('sort')->get();
+        $bannersAfterSections = StoreBanner::where('store_id', $store->id)->active()->where('position', 'after_sections')->orderBy('sort')->get();
+        $bannersBottom        = StoreBanner::where('store_id', $store->id)->active()->where('position', 'bottom')->orderBy('sort')->get();
+
+        // ── Sections
+        $sections = StoreSection::where('store_id', $store->id)
+            ->where('is_active', true)
+            ->with(['products' => fn($q) => $q->where('is_active', true)->with('images', 'category')])
+            ->orderBy('sort')
+            ->get();
+
+        // Active category objects for breadcrumb
+        $activeCategory    = $categorySlug ? Category::where('slug', $categorySlug)->first() : null;
+        $activeSubCategory = $subSlug      ? Category::where('slug', $subSlug)->first()      : null;
+
+        return view('pages.store', compact(
+            'store', 'products', 'totalProducts',
+            'sidebarCategories', 'activeCategory', 'activeSubCategory',
+            'bannersTop', 'bannersAfterSections', 'bannersBottom',
+            'sections', 'sort', 'categorySlug', 'subSlug'
+        ));
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // OFFICIAL STORE
+    // ─────────────────────────────────────────────────────────────────────────
     public function showOfficial(Request $request)
     {
         $officialPhone = \App\Models\Setting::get('official_store_phone', '');
@@ -168,23 +226,71 @@ class StoreController extends Controller
             'slug'        => 'taku-official',
         ];
 
-        $products   = \App\Models\Product::whereNull('store_id')->where('is_active', true)
-            ->with('images','category')->latest()->get();
-        $categories = $products->pluck('category')->filter()->unique('id')->values();
+        $perPage      = 20;
+        $categorySlug = $request->get('category');
+        $subSlug      = $request->get('sub');
+        $sort         = $request->get('sort', 'latest');
 
-        try {
-            $banners = \App\Models\StoreBanner::whereNull('store_id')
-                ->where('is_active', true)->orderBy('sort')->get();
-        } catch (\Exception $e) { $banners = collect(); }
+        // Kategori sidebar
+        $allProducts = Product::whereNull('store_id')->where('is_active', true)
+            ->pluck('category_id')->filter()->unique()->values();
 
-        try {
-            $sections = \App\Models\StoreSection::whereNull('store_id')
-                ->where('is_active', true)
-                ->with(['products' => fn($q) => $q->where('is_active', true)->with('images','category')])
-                ->orderBy('sort')->get();
-        } catch (\Exception $e) { $sections = collect(); }
+        $sidebarCategories = Category::with(['children' => function ($q) use ($allProducts) {
+                $q->whereIn('id', $allProducts)->active()->orderBy('sort');
+            }])
+            ->whereNull('parent_id')
+            ->active()
+            ->where(function ($q) use ($allProducts) {
+                $q->whereIn('id', $allProducts)
+                  ->orWhereHas('children', fn($c) => $c->whereIn('id', $allProducts));
+            })
+            ->orderBy('sort')
+            ->get();
 
-        return view('pages.store-official', compact('store','products','categories','banners','sections','officialPhone'));
+        // Query produk
+        $productQuery = Product::whereNull('store_id')
+            ->where('is_active', true)
+            ->with('images', 'category');
+
+        if ($subSlug) {
+            $productQuery->whereHas('category', fn($q) => $q->where('slug', $subSlug));
+        } elseif ($categorySlug) {
+            $productQuery->whereHas('category', function ($q) use ($categorySlug) {
+                $q->where('slug', $categorySlug)
+                  ->orWhereHas('parent', fn($p) => $p->where('slug', $categorySlug));
+            });
+        }
+
+        match ($sort) {
+            'oldest'    => $productQuery->oldest(),
+            'price_asc' => $productQuery->orderBy('price'),
+            'price_desc'=> $productQuery->orderByDesc('price'),
+            'name'      => $productQuery->orderBy('name'),
+            default     => $productQuery->latest(),
+        };
+
+        $products      = $productQuery->paginate($perPage)->withQueryString();
+        $totalProducts = Product::whereNull('store_id')->where('is_active', true)->count();
+
+        $bannersTop           = StoreBanner::whereNull('store_id')->active()->where('position', 'top')->orderBy('sort')->get();
+        $bannersAfterSections = StoreBanner::whereNull('store_id')->active()->where('position', 'after_sections')->orderBy('sort')->get();
+        $bannersBottom        = StoreBanner::whereNull('store_id')->active()->where('position', 'bottom')->orderBy('sort')->get();
+
+        $sections = StoreSection::whereNull('store_id')
+            ->where('is_active', true)
+            ->with(['products' => fn($q) => $q->where('is_active', true)->with('images', 'category')])
+            ->orderBy('sort')
+            ->get();
+
+        $activeCategory    = $categorySlug ? Category::where('slug', $categorySlug)->first() : null;
+        $activeSubCategory = $subSlug      ? Category::where('slug', $subSlug)->first()      : null;
+
+        return view('pages.store-official', compact(
+            'store', 'products', 'totalProducts',
+            'sidebarCategories', 'activeCategory', 'activeSubCategory',
+            'bannersTop', 'bannersAfterSections', 'bannersBottom',
+            'sections', 'sort', 'categorySlug', 'subSlug',
+            'officialPhone'
+        ));
     }
-
 }

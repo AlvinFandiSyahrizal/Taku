@@ -81,52 +81,77 @@
         <form action="{{ route('checkout.process') }}" method="POST" id="checkoutForm">
             @csrf
 
-            @php
-                $addresses  = Auth::user()->addresses()->get();
-                $defaultAddr = $addresses->firstWhere('is_default', true) ?? $addresses->first();
-            @endphp
+@php
+    $addresses   = Auth::user()->addresses()->get();
+    $defaultAddr = $addresses->firstWhere('is_default', true) ?? $addresses->first();
+    $hasAddr     = $addresses->count() > 0;
+@endphp
 
-            @if($addresses->count() > 0)
-            <p class="co-section-label">Alamat Pengiriman</p>
-            <div class="addr-list" id="addrList">
-                @foreach($addresses as $addr)
-                <label class="addr-option {{ $addr->is_default ? 'selected' : '' }}"
-                       onclick="selectAddr(this, {{ $addr->id }})">
-                    <input type="radio" name="use_address" value="{{ $addr->id }}"
-                           {{ $addr->is_default ? 'checked' : '' }}
-                           onchange="fillAddress(
-                               '{{ addslashes($addr->recipient) }}',
-                               '{{ addslashes($addr->phone) }}',
-                               '{{ addslashes($addr->address) }}'
-                           )">
-                    <div>
-                        <p class="addr-option-label">
-                            {{ $addr->label }}
-                            @if($addr->is_default)
-                                <span style="font-size:10px;background:rgba(201,169,110,.15);color:#b8955a;padding:1px 7px;border-radius:100px;margin-left:4px;font-weight:400;">Utama</span>
-                            @endif
-                        </p>
-                        <p class="addr-option-detail">
-                            {{ $addr->recipient }} · {{ $addr->phone }}<br>
-                            {{ $addr->address }}
-                            @if($addr->city) · {{ $addr->city }} @endif
-                            @if($addr->postal_code) {{ $addr->postal_code }} @endif
-                        </p>
-                    </div>
-                </label>
-                @endforeach
-                <label class="addr-new" onclick="selectNew(this)">
-                    <input type="radio" name="use_address" value="new" style="accent-color:#0b2a4a;" onchange="clearAddress()">
-                    <span style="font-size:12px;color:rgba(11,42,74,.5);">+ Masukkan alamat baru</span>
-                </label>
-                <p style="font-size:11px;color:rgba(11,42,74,.4);margin-top:6px;padding:0 4px;">
-                    💡 Mau simpan alamat? 
-                    <a href="{{ route('profile') }}#alamat" style="color:#0b2a4a;font-weight:500;">Tambah di profil</a>
-                    agar bisa dipakai lagi next order.
-                </p>
-            </div>
-            <div style="height:.5px;background:rgba(11,42,74,.08);margin:4px 0 20px;"></div>
-            @endif
+@if($hasAddr)
+{{-- Punya alamat tersimpan --}}
+<p class="co-section-label">Alamat Pengiriman</p>
+<div class="addr-list" id="addrList">
+    @foreach($addresses as $addr)
+    <label class="addr-option {{ $addr->is_default ? 'selected' : '' }}"
+           onclick="selectAddr(this)">
+        <input type="radio" name="use_address" value="{{ $addr->id }}"
+               {{ $addr->is_default ? 'checked' : '' }}
+               onchange="fillAddress(
+                   '{{ addslashes($addr->recipient) }}',
+                   '{{ addslashes($addr->phone) }}',
+                   '{{ addslashes($addr->address) }}'
+               )">
+        <div>
+            <p class="addr-option-label">
+                {{ $addr->label }}
+                @if($addr->is_default)
+                    <span style="font-size:10px;background:rgba(201,169,110,.15);color:#b8955a;padding:1px 7px;border-radius:100px;margin-left:4px;font-weight:400;">Utama</span>
+                @endif
+            </p>
+            <p class="addr-option-detail">
+                {{ $addr->recipient }} · {{ $addr->phone }}<br>
+                {{ $addr->address }}
+                @if($addr->city) · {{ $addr->city }} @endif
+                @if($addr->postal_code) {{ $addr->postal_code }} @endif
+            </p>
+        </div>
+    </label>
+    @endforeach
+
+    {{-- Opsi alamat baru --}}
+    <label class="addr-new" id="addrNewLabel" onclick="selectNew(this)">
+        <input type="radio" name="use_address" value="new"
+               style="accent-color:#0b2a4a;" onchange="showInlineForm(true)">
+        <span style="font-size:12px;color:rgba(11,42,74,.5);">+ Masukkan alamat baru</span>
+    </label>
+</div>
+
+{{-- Form alamat baru (tersembunyi, muncul kalau pilih "alamat baru") --}}
+<div id="inlineAddrForm" style="display:none;background:#f9f7f3;border:.5px solid rgba(11,42,74,.1);border-radius:10px;padding:16px;margin-bottom:20px;">
+    <p style="font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:rgba(11,42,74,.4);margin-bottom:14px;">Alamat Baru</p>
+    @include('pages.checkout-address-fields')
+    <label style="display:flex;align-items:center;gap:8px;margin-top:10px;font-size:12px;color:rgba(11,42,74,.6);cursor:pointer;">
+        <input type="checkbox" name="save_new_address" value="1" style="accent-color:#0b2a4a;">
+        Simpan alamat ini untuk order berikutnya
+    </label>
+</div>
+<div style="height:.5px;background:rgba(11,42,74,.08);margin:4px 0 20px;"></div>
+
+@else
+{{-- Belum punya alamat tersimpan sama sekali --}}
+<div style="background:#f9f7f3;border:.5px solid rgba(201,169,110,.2);border-radius:12px;padding:16px 18px;margin-bottom:24px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px;">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#c9a96e" stroke-width="1.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0118 0z"/><circle cx="12" cy="10" r="3"/></svg>
+        <p style="font-size:12px;font-weight:500;color:#0b2a4a;">Isi Alamat Pengiriman</p>
+    </div>
+    <input type="hidden" name="use_address" value="new">
+    @include('pages.checkout-address-fields')
+    <label style="display:flex;align-items:center;gap:8px;margin-top:12px;font-size:12px;color:rgba(11,42,74,.6);cursor:pointer;">
+        <input type="checkbox" name="save_new_address" value="1" style="accent-color:#0b2a4a;" checked>
+        Simpan alamat ini ke profil saya
+    </label>
+</div>
+@endif
 
             <p class="co-section-label">Data Penerima</p>
 
@@ -178,16 +203,15 @@
                 @error('phone') <p class="co-error">{{ $message }}</p> @enderror
             </div>
 
-            <p class="co-section-label" style="margin-top:24px;">Alamat Pengiriman</p>
+<p class="co-section-label" style="margin-top:24px;">Ringkasan Alamat</p>
 
-            <div class="co-field">
-                <label class="co-field-label">Alamat Lengkap *</label>
-                <textarea name="address" class="co-textarea"
-                          id="coAddress"
-                          placeholder="Jl. Contoh No. 10, Kelurahan, Kecamatan, Kota, Provinsi"
-                          required>{{ old('address', $defaultAddr?->address ?? '') }}</textarea>
-                @error('address') <p class="co-error">{{ $message }}</p> @enderror
-            </div>
+<div class="co-field">
+    <textarea name="address" class="co-textarea" id="coAddress"
+              placeholder="Alamat akan terisi otomatis dari pilihan di atas"
+              required>{{ old('address', $defaultAddr?->address ?? '') }}</textarea>
+    @error('address') <p class="co-error">{{ $message }}</p> @enderror
+    <p style="font-size:11px;color:rgba(11,42,74,.4);margin-top:4px;">Kamu bisa edit langsung jika perlu.</p>
+</div>
 
             <div class="co-field">
                 <label class="co-field-label">Catatan (opsional)</label>
@@ -315,6 +339,112 @@ document.addEventListener('DOMContentLoaded', () => {
         checked.dispatchEvent(new Event('change'));
     }
 });
+</script>
+
+<script>
+const CO_BASE = '/api/wilayah';
+
+async function coFetch(path) {
+    try {
+        const r = await fetch(CO_BASE + '/' + path);
+        if (!r.ok) return [];
+        const j = await r.json();
+        return j.data ?? [];
+    } catch { return []; }
+}
+
+function coSetOptions(selId, data, vKey, lKey, placeholder) {
+    const sel = document.getElementById(selId);
+    if (!sel) return;
+    sel.innerHTML = `<option value="">${placeholder}</option>`;
+    data.forEach(item => {
+        const opt = document.createElement('option');
+        opt.value = item[lKey]; // simpan nama, bukan kode
+        opt.dataset.code = item[vKey];
+        opt.textContent = item[lKey];
+        sel.appendChild(opt);
+    });
+    sel.disabled = data.length === 0;
+}
+
+(async function coInitProvinces() {
+    document.getElementById('coLoadingProv').style.display = 'block';
+    const data = await coFetch('provinces');
+    document.getElementById('coLoadingProv').style.display = 'none';
+    coSetOptions('coProvince', data, 'code', 'name', '— Pilih Provinsi —');
+})();
+
+async function coLoadRegencies(provName) {
+    // Cari kode provinsi dari option yang dipilih
+    const sel = document.getElementById('coProvince');
+    const opt = sel.querySelector(`option[value="${provName}"]`);
+    const code = opt?.dataset.code;
+    if (!code) return;
+
+    coSetOptions('coRegency',  [], 'code', 'name', '— Memuat... —');
+    coSetOptions('coDistrict', [], 'code', 'name', '— Pilih Kab/Kota dulu —');
+    coSetOptions('coVillage',  [], 'code', 'name', '— Pilih Kecamatan dulu —');
+    document.getElementById('coRegency').disabled  = true;
+    document.getElementById('coDistrict').disabled = true;
+    document.getElementById('coVillage').disabled  = true;
+
+    const data = await coFetch('regencies/' + code);
+    coSetOptions('coRegency', data, 'code', 'name', '— Pilih Kabupaten/Kota —');
+    document.getElementById('coRegency').disabled = false;
+    coUpdateAddress();
+}
+
+async function coLoadDistricts(regName) {
+    const sel = document.getElementById('coRegency');
+    const opt = sel.querySelector(`option[value="${regName}"]`);
+    const code = opt?.dataset.code;
+    if (!code) return;
+
+    coSetOptions('coDistrict', [], 'code', 'name', '— Memuat... —');
+    coSetOptions('coVillage',  [], 'code', 'name', '— Pilih Kecamatan dulu —');
+    document.getElementById('coDistrict').disabled = true;
+    document.getElementById('coVillage').disabled  = true;
+
+    const data = await coFetch('districts/' + code);
+    coSetOptions('coDistrict', data, 'code', 'name', '— Pilih Kecamatan —');
+    document.getElementById('coDistrict').disabled = false;
+    coUpdateAddress();
+}
+
+async function coLoadVillages(distName) {
+    const sel = document.getElementById('coDistrict');
+    const opt = sel.querySelector(`option[value="${distName}"]`);
+    const code = opt?.dataset.code;
+    if (!code) return;
+
+    coSetOptions('coVillage', [], 'code', 'name', '— Memuat... —');
+    document.getElementById('coVillage').disabled = true;
+
+    const data = await coFetch('villages/' + code);
+    coSetOptions('coVillage', data, 'code', 'name', '— Pilih Kelurahan/Desa —');
+    document.getElementById('coVillage').disabled = false;
+    coUpdateAddress();
+}
+
+function coUpdateAddress() {
+    const street   = document.getElementById('coStreet')?.value?.trim() || '';
+    const village  = document.getElementById('coVillage')?.value || '';
+    const district = document.getElementById('coDistrict')?.value || '';
+    const regency  = document.getElementById('coRegency')?.value || '';
+    const province = document.getElementById('coProvince')?.value || '';
+    const postal   = document.getElementById('coPostal')?.value || '';
+
+    const parts = [street, village, district, regency, province].filter(Boolean);
+    if (postal) parts.push(postal);
+
+    const addr = document.getElementById('coAddress');
+    if (addr && parts.length > 0) addr.value = parts.join(', ');
+}
+
+function showInlineForm(show) {
+    const form = document.getElementById('inlineAddrForm');
+    if (form) form.style.display = show ? 'block' : 'none';
+}
 </script>
 
 @endsection

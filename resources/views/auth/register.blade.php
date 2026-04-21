@@ -1,4 +1,6 @@
 @extends('layouts.app')
+@section('robots', 'noindex, nofollow')
+@section('title', 'Buat Akun — Taku')
 @section('content')
 @if(config('services.turnstile.site_key'))
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js" async defer></script>

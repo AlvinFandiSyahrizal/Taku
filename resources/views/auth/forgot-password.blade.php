@@ -1,4 +1,6 @@
 @extends('layouts.app')
+@section('robots', 'noindex, nofollow')
+@section('title', 'Lupa Password — Taku')
 @section('content')
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap');

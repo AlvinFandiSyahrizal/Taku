@@ -1,4 +1,7 @@
 @extends('layouts.app')
+@section('title', $product->name . ' — Taku')
+@section('meta_description', Str::limit(strip_tags($product->description ?? $product->name . ' — tanaman premium pilihan di Taku. Estetik, berkualitas, cocok untuk ruang modern kamu.'), 155))
+@section('og_image', asset($product->image ?? 'images/og-taku.jpg'))
 @section('content')
 @php
     app()->setLocale(session('lang', 'id'));
@@ -552,6 +555,6 @@ document.addEventListener('DOMContentLoaded',()=>{
     initDragScroll(document.getElementById('sliderStore'));
     initDragScroll(document.getElementById('sliderOthers'));
 });
-</script>  
+</script>
 
 @endsection

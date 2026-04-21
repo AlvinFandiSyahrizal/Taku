@@ -12,10 +12,11 @@ class CartController extends Controller
 
     public function index()
     {
-        $grouped = $this->cart->getGrouped();
+        $grouped     = $this->cart->getGrouped();
+        $unavailable = $this->cart->getUnavailable();
         $total   = $this->cart->total();
 
-        return view('pages.Cart', compact('grouped', 'total'));
+        return view('pages.Cart', compact('grouped','unavailable', 'total'));
     }
 
     public function add(Request $request)

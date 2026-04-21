@@ -1,4 +1,6 @@
 @extends('layouts.app')
+@section('robots', 'noindex, nofollow')
+@section('title', 'Masuk — Taku')
 @section('content')
 @php app()->setLocale(session('lang', 'id')); @endphp
 
@@ -23,7 +25,6 @@
 .eye-toggle{position:absolute;right:13px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;color:rgba(11,42,74,.35);display:flex;align-items:center;padding:0;transition:color .2s;}
 .eye-toggle:hover{color:#0b2a4a;}
 
-/* Error dan cooldown */
 .auth-error{background:#fdf0f0;border:.5px solid #f5c0c0;border-radius:8px;padding:12px 16px;font-size:13px;color:#c0392b;margin-bottom:20px;}
 .cooldown-box{background:#fff8e6;border:.5px solid #f0d080;border-radius:8px;padding:12px 16px;font-size:13px;color:#7a5c00;margin-bottom:20px;display:flex;align-items:center;gap:10px;}
 .cooldown-timer{font-weight:600;color:#c9a96e;font-size:16px;min-width:28px;text-align:center;}
@@ -48,15 +49,12 @@
         <p class="auth-brand">Taku</p>
         <h1 class="auth-title">{{ app()->getLocale()==='en' ? 'Sign In' : 'Masuk' }}</h1>
 
-        {{-- Error biasa --}}
         @if($errors->has('email') && !str_contains($errors->first('email'), 'detik'))
             <div class="auth-error">{{ $errors->first('email') }}</div>
         @endif
 
-        {{-- Cooldown box --}}
         @if($errors->has('email') && str_contains($errors->first('email'), 'detik'))
         @php
-            // Ambil sisa detik dari pesan error
             preg_match('/(\d+) detik/', $errors->first('email'), $m);
             $remainingSeconds = (int)($m[1] ?? 60);
         @endphp
@@ -71,7 +69,6 @@
         </div>
         @endif
 
-        {{-- Error Turnstile --}}
         @error('cf-turnstile-response')
             <div class="auth-error">{{ $message }}</div>
         @enderror
@@ -101,7 +98,6 @@
                 </div>
             </div>
 
-            {{-- Turnstile --}}
             @if(config('services.turnstile.site_key'))
             <div style="margin-bottom:16px;">
                 <div class="cf-turnstile"
@@ -145,7 +141,6 @@ function toggleEye(id, btn) {
         : `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 }
 
-// Cooldown timer countdown
 const timerEl = document.getElementById('cooldownTimer');
 const loginBtn = document.getElementById('loginBtn');
 

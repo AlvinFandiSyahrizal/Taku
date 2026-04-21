@@ -1,2 +1,18 @@
 User-agent: *
-Disallow:
+Allow: /
+
+Disallow: /admin/
+Disallow: /merchant/
+Disallow: /cart
+Disallow: /checkout
+Disallow: /checkout/
+Disallow: /profile
+Disallow: /profile/
+Disallow: /api/
+Disallow: /email/
+Disallow: /login
+Disallow: /register
+Disallow: /forgot-password
+Disallow: /reset-password
+
+Sitemap: https://taku.web.id/sitemap.xml

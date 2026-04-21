@@ -16,29 +16,32 @@ class StoreAppearanceController extends Controller
     public function index()
     {
         $store    = $this->store();
-        $banners  = StoreBanner::where('store_id', $store->id)->orderBy('sort')->get();
+        $banners  = StoreBanner::where('store_id', $store->id)
+            ->orderBy('position')->orderBy('sort')->get();
         $sections = StoreSection::where('store_id', $store->id)
-            ->with(['products' => fn($q) => $q->with('store')])
+            ->with(['products' => fn($q) => $q->with('category')])
             ->orderBy('sort')->get();
-        $products = Product::where('store_id', $store->id)->where('is_active', true)->get();
+        $products = Product::where('store_id', $store->id)
+            ->where('is_active', true)
+            ->with('category')
+            ->get();
 
         return view('merchant.store-appearance', compact('store', 'banners', 'sections', 'products'));
     }
+
 
     public function storeBanner(Request $request)
     {
         $request->validate([
             'title'       => 'nullable|string|max:100',
             'subtitle'    => 'nullable|string|max:200',
-            'image'       => 'nullable|image|max:2048',
+            'image'       => 'required|image|max:2048',
             'link'        => 'nullable|string|max:200',
             'button_text' => 'nullable|string|max:50',
+            'position'    => 'nullable|in:top,after_sections,bottom',
         ]);
 
-        $imagePath = null;
-        if ($request->hasFile('image')) {
-            $imagePath = 'storage/' . $request->file('image')->store('store-banners', 'public');
-        }
+        $imagePath = 'storage/' . $request->file('image')->store('store-banners', 'public');
 
         StoreBanner::create([
             'store_id'    => $this->store()->id,
@@ -47,10 +50,46 @@ class StoreAppearanceController extends Controller
             'image'       => $imagePath,
             'link'        => $request->link,
             'button_text' => $request->button_text,
+            'auto_slide'  => $request->has('auto_slide'), 
             'sort'        => StoreBanner::where('store_id', $this->store()->id)->count(),
+            'position'    => $request->get('position', 'top'),
+            'is_active'   => true,
         ]);
 
         return back()->with('success', 'Banner ditambahkan.');
+    }
+
+    public function updateBanner(Request $request, StoreBanner $banner)
+    {
+        abort_if($banner->store_id !== $this->store()->id, 403);
+
+        $request->validate([
+            'title'       => 'nullable|string|max:100',
+            'subtitle'    => 'nullable|string|max:200',
+            'image'       => 'nullable|image|max:2048',
+            'link'        => 'nullable|string|max:200',
+            'button_text' => 'nullable|string|max:50',
+            'position'    => 'nullable|in:top,after_sections,bottom',
+        ]);
+
+        $data = [
+            'title'       => $request->title,
+            'subtitle'    => $request->subtitle,
+            'link'        => $request->link,
+            'button_text' => $request->button_text,
+            'auto_slide'  => $request->has('auto_slide'), 
+            'position'    => $request->get('position', $banner->position ?? 'top'),
+        ];
+
+        if ($request->hasFile('image')) {
+            if ($banner->image) {
+                Storage::disk('public')->delete(str_replace('storage/', '', $banner->image));
+            }
+            $data['image'] = 'storage/' . $request->file('image')->store('store-banners', 'public');
+        }
+
+        $banner->update($data);
+        return back()->with('success', 'Banner diupdate.');
     }
 
     public function toggleBanner(StoreBanner $banner)
@@ -70,6 +109,22 @@ class StoreAppearanceController extends Controller
         return back()->with('success', 'Banner dihapus.');
     }
 
+    public function reorderBanner(Request $request): \Illuminate\Http\JsonResponse
+    {
+        $store    = $this->store();
+        $ids      = $request->input('ids', []);
+        $position = $request->input('position', 'top');
+
+        foreach ($ids as $sort => $id) {
+            StoreBanner::where('id', $id)
+                ->where('store_id', $store->id)
+                ->update(['sort' => $sort, 'position' => $position]);
+        }
+
+        return response()->json(['ok' => true]);
+    }
+
+
     public function storeSection(Request $request)
     {
         $request->validate(['title' => 'required|string|max:100']);
@@ -79,7 +134,7 @@ class StoreAppearanceController extends Controller
             'title'      => $request->title,
             'subtitle'   => $request->subtitle,
             'rows'       => $request->get('rows', 1),
-            'auto_slide' => $request->boolean('auto_slide'),
+            'auto_slide' => $request->has('auto_slide'), 
             'sort'       => StoreSection::where('store_id', $this->store()->id)->count(),
         ]);
 
@@ -95,7 +150,7 @@ class StoreAppearanceController extends Controller
             'title'      => $request->title,
             'subtitle'   => $request->subtitle,
             'rows'       => $request->get('rows', 1),
-            'auto_slide' => $request->boolean('auto_slide'),
+            'auto_slide' => $request->has('auto_slide'), 
         ]);
 
         return back()->with('success', 'Section diupdate.');

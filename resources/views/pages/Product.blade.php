@@ -1,4 +1,6 @@
 @extends('layouts.app')
+@section('title', 'Koleksi Tanaman Premium — Taku')
+@section('meta_description', 'Jelajahi koleksi lengkap tanaman hias premium di Taku. Filter berdasarkan kategori, ukuran, dan harga. Cocok untuk apartemen, rumah, dan ruang kerja.')
 @section('content')
 @php app()->setLocale(session('lang','id')); @endphp
 
@@ -17,7 +19,7 @@
     width:220px;
     flex-shrink:0;
     position:sticky;
-    top:64px;          
+    top:64px;
     max-height:calc(100vh - 64px);
     overflow-y:auto;
     padding-right:32px;
@@ -26,7 +28,7 @@
     border-right:.5px solid rgba(11,42,74,.08);
     scrollbar-width:thin;
     scrollbar-color:rgba(11,42,74,.1) transparent;
-    align-self:flex-start;  
+    align-self:flex-start;
 }
 .sidebar-brand{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#c9a96e;margin-bottom:4px;}
 .sidebar-title{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:28px;color:#0b2a4a;margin-bottom:24px;line-height:1.1;}

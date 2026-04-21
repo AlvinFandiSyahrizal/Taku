@@ -16,54 +16,86 @@ class CartService
         return $this->getFromSession();
     }
 
-    private function getFromDb(): array
-    {
-        $items = CartItem::where('user_id', Auth::id())
-            ->with(['product', 'product.store'])
-            ->get();
+ private function getFromDb(): array
+{
+    $items = CartItem::where('user_id', Auth::id())
+        ->with(['product', 'product.store'])
+        ->get();
 
-        $cart = [];
-        foreach ($items as $item) {
-            if (!$item->product) continue;
-            $cart[(string) $item->product_id] = [
-                'product_id'     => $item->product_id,
-                'store_id'       => $item->store_id,
-                'store_name'     => $item->product->store?->name ?? 'Taku Official',
-                'store_slug'     => $item->product->store?->slug ?? null,
-                'name'           => $item->product->name,
-                'price'          => $item->product->getFinalPrice(),
-                'original_price' => $item->product->price,
-                'image'          => $item->product->image,
-                'qty'            => $item->qty,
-                'is_selected'    => (bool) $item->is_selected,
-                'stock'          => $item->product->stock ?? 0,
+    $cart = [];
+    foreach ($items as $item) {
+        if (!$item->product) continue;
+
+        // Produk official (store_id null) = store selalu aktif
+        $storeIsActive = $item->product->store_id === null
+            ? true
+            : $item->product->store?->status === 'active';
+
+        $cart[(string) $item->product_id] = [
+            'product_id'      => $item->product_id,
+            'store_id'        => $item->store_id,
+            'store_name'      => $item->product->store?->name ?? 'Taku Official',
+            'store_slug'      => $item->product->store?->slug ?? null,
+            'name'            => $item->product->name,
+            'price'           => $item->product->getFinalPrice(),
+            'original_price'  => $item->product->price,
+            'image'           => $item->product->image,
+            'qty'             => $item->qty,
+            'is_selected'     => (bool) $item->is_selected,
+            'stock'           => $item->product->stock ?? 0,
+            'is_active'       => (bool) $item->product->is_active,
+            'store_is_active' => $storeIsActive,
+        ];
+    }
+    return $cart;
+}
+
+public function getGrouped(): array
+{
+    $cart    = $this->get();
+    $grouped = [];
+
+    foreach ($cart as $productId => $item) {
+        $isActive    = $item['is_active'] ?? true;
+        $storeActive = $item['store_is_active'] ?? true;
+
+        if (!$isActive || !$storeActive) continue;
+
+        $storeKey = $item['store_id'] ?? 'official';
+
+        if (!isset($grouped[$storeKey])) {
+            $grouped[$storeKey] = [
+                'store_id'   => $item['store_id'] ?? null,
+                'store_name' => $item['store_name'] ?? 'Taku Official',
+                'store_slug' => $item['store_slug'] ?? null,
+                'items'      => [],
             ];
         }
-        return $cart;
+
+        $grouped[$storeKey]['items'][(string)$productId] = $item;
     }
 
-    public function getGrouped(): array
-    {
-        $cart = $this->get();
-        $grouped = [];
+    return $grouped;
+}
 
-        foreach ($cart as $productId => $item) {
-            $storeKey = $item['store_id'] ?? 'official';
+public function getUnavailable(): array
+{
+    $cart      = $this->get();
+    $unavailable = [];
 
-            if (!isset($grouped[$storeKey])) {
-                $grouped[$storeKey] = [
-                    'store_id'   => $item['store_id'] ?? null,
-                    'store_name' => $item['store_name'] ?? 'Taku Official',
-                    'store_slug' => $item['store_slug'] ?? null,
-                    'items'      => [],
-                ];
-            }
+    foreach ($cart as $productId => $item) {
+        $stockVal    = $item['stock'] ?? 999;
+        $isActive    = $item['is_active'] ?? true;
+        $storeActive = $item['store_is_active'] ?? true;
 
-            $grouped[$storeKey]['items'][(string)$productId] = $item;
+ 
+        if (!$isActive || !$storeActive) {
+            $unavailable[(string)$productId] = $item;
         }
-
-        return $grouped;
     }
+
+    return $unavailable;
+}
 
     private function getFromSession(): array
     {
@@ -111,6 +143,9 @@ class CartService
                     'original_price' => $originalPrice,
                     'image'          => $product->image,
                     'qty'            => $qty,
+
+                    'is_active'       => $product->is_active,
+                    'store_is_active' => $product->store?->status === 'active',
                 ];
             }
             session(['cart' => $cart]);
@@ -216,3 +251,7 @@ class CartService
     }
 
 }
+
+
+
+

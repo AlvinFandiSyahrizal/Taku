@@ -290,178 +290,238 @@
         </button>
     </div>
 
-    {{-- Cart items --}}
-    <div id="cartItems">
-        @foreach($grouped as $storeKey => $group)
-        <div class="store-group">
-            <div class="store-group-header">
-                <input type="checkbox" class="store-group-check store-check"
-                    data-store="{{ $storeKey }}"
-                    onchange="toggleStore('{{ $storeKey }}', this.checked)">
-                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(11,42,74,.45)" stroke-width="1.5" style="flex-shrink:0;">
-                    <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
-                </svg>
-                @if($group['store_slug'] ?? null)
-                    <a href="{{ route('store.show', $group['store_slug']) }}" class="store-group-name">{{ $group['store_name'] }}</a>
-                @else
-                    <span class="store-group-name" style="cursor:default;">{{ $group['store_name'] }}</span>
-                @endif
-                <span class="store-group-badge">{{ count($group['items']) }} produk</span>
-                <button type="button" class="store-toggle" onclick="toggleStoreCollapse(this)">▾</button>
-            </div>
+{{-- Cart items --}}
+<div id="cartItems">
+    @foreach($grouped as $storeKey => $group)
+    <div class="store-group">
+        <div class="store-group-header">
+            <input type="checkbox" class="store-group-check store-check"
+                data-store="{{ $storeKey }}"
+                onchange="toggleStore('{{ $storeKey }}', this.checked)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(11,42,74,.45)" stroke-width="1.5" style="flex-shrink:0;">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+            @if($group['store_slug'] ?? null)
+                <a href="{{ route('store.show', $group['store_slug']) }}" class="store-group-name">{{ $group['store_name'] }}</a>
+            @else
+                <span class="store-group-name" style="cursor:default;">{{ $group['store_name'] }}</span>
+            @endif
+            <span class="store-group-badge">{{ count($group['items']) }} produk</span>
+            <button type="button" class="store-toggle" onclick="toggleStoreCollapse(this)">▾</button>
+        </div>
 
-            {{-- Desktop --}}
-            <table class="cart-table cart-desktop">
-                <thead>
-                    <tr>
-                        <th style="width:20px;"></th>
-                        <th>Produk</th>
-                        <th>Harga</th>
-                        <th>Jumlah</th>
-                        <th>Subtotal</th>
-                    </tr>
-                </thead>
-                <tbody>
-                @foreach($group['items'] as $id => $item)
-                @php
-                    $finalPrice    = (int)$item['price'];
-                    $originalPrice = (int)($item['original_price'] ?? $finalPrice);
-                    $hasDiscount   = $originalPrice > $finalPrice;
-                    $subtotal      = $finalPrice * $item['qty'];
-                    $stock         = (int)($item['stock'] ?? 999);
-                    $stockOut      = $stock === 0;
-                    $isSelected    = (bool)($item['is_selected'] ?? true);
-                @endphp
-                <tr class="cart-row{{ $stockOut ? ' stock-out-row' : '' }}" id="row-{{ $id }}">
-                    <td>
-                        <input type="checkbox"
-                               class="item-check item-check-{{ $storeKey }}"
-                               data-id="{{ $id }}"
-                               data-price="{{ $finalPrice }}"
-                               data-qty="{{ $item['qty'] }}"
-                               {{ $isSelected && !$stockOut ? 'checked' : '' }}
-                               {{ $stockOut ? 'disabled' : '' }}
-                               onchange="onItemCheck(this, {{ $id }})">
-                    </td>
-                    <td>
-                        <div class="cart-product">
-                            <a href="{{ route('product.show', $id) }}">
-                                <img src="{{ asset($item['image'] ?? 'images/placeholder.jpg') }}"
-                                     class="cart-product-img" alt="{{ $item['name'] }}"
-                                     style="{{ $stockOut ? 'opacity:.4;' : '' }}"
-                                     onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
+        <table class="cart-table cart-desktop">
+            <thead>
+                <tr>
+                    <th style="width:20px;"></th>
+                    <th>Produk</th>
+                    <th>Harga</th>
+                    <th>Jumlah</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+            @foreach($group['items'] as $id => $item)
+            @php
+                $finalPrice    = (int)$item['price'];
+                $originalPrice = (int)($item['original_price'] ?? $finalPrice);
+                $hasDiscount   = $originalPrice > $finalPrice;
+                $subtotal      = $finalPrice * $item['qty'];
+                $stock         = (int)($item['stock'] ?? 999);
+                $stockOut      = $stock === 0;
+                $isSelected    = (bool)($item['is_selected'] ?? true);
+            @endphp
+            <tr class="cart-row{{ $stockOut ? ' stock-out-row' : '' }}" id="row-{{ $id }}">
+                <td>
+                    <input type="checkbox"
+                           class="item-check item-check-{{ $storeKey }}"
+                           data-id="{{ $id }}"
+                           data-price="{{ $finalPrice }}"
+                           data-qty="{{ $item['qty'] }}"
+                           {{ $isSelected && !$stockOut ? 'checked' : '' }}
+                           {{ $stockOut ? 'disabled' : '' }}
+                           onchange="onItemCheck(this, {{ $id }})">
+                </td>
+                <td>
+                    <div class="cart-product">
+                        <a href="{{ route('product.show', $id) }}">
+                            <img src="{{ asset($item['image'] ?? 'images/placeholder.jpg') }}"
+                                 class="cart-product-img" alt="{{ $item['name'] }}"
+                                 style="{{ $stockOut ? 'opacity:.4;' : '' }}"
+                                 onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
+                        </a>
+                        <div>
+                            <a href="{{ route('product.show', $id) }}" class="cart-product-name"
+                               style="{{ $stockOut ? 'color:rgba(11,42,74,.4);' : '' }}">
+                                {{ $item['name'] }}
                             </a>
-                            <div>
-                                <a href="{{ route('product.show', $id) }}" class="cart-product-name"
-                                   style="{{ $stockOut ? 'color:rgba(11,42,74,.4);' : '' }}">
-                                    {{ $item['name'] }}
-                                </a>
-                                @if($stockOut)
-                                    <span class="stock-out-badge">Stok habis</span>
-                                @elseif($hasDiscount)
-                                    <p class="cart-product-meta">Hemat Rp {{ number_format($originalPrice - $finalPrice,0,',','.') }}</p>
-                                @endif
-                            </div>
+                            @if($stockOut)
+                                <span class="stock-out-badge">Stok Habis</span>
+                            @elseif($hasDiscount)
+                                <p class="cart-product-meta">Hemat Rp {{ number_format($originalPrice - $finalPrice,0,',','.') }}</p>
+                            @endif
                         </div>
-                    </td>
-                    <td>
-                        @if($hasDiscount)
-                            <p class="price-final">Rp {{ number_format($finalPrice,0,',','.') }}</p>
-                            <p class="price-original">Rp {{ number_format($originalPrice,0,',','.') }}</p>
+                    </div>
+                </td>
+                <td>
+                    @if($hasDiscount)
+                        <p class="price-final">Rp {{ number_format($finalPrice,0,',','.') }}</p>
+                        <p class="price-original">Rp {{ number_format($originalPrice,0,',','.') }}</p>
+                    @else
+                        <p class="price-final">Rp {{ number_format($finalPrice,0,',','.') }}</p>
+                    @endif
+                </td>
+                <td>
+                    <div class="cart-qty-wrap">
+                        <button type="button" class="cart-qty-btn"
+                                onclick="ajaxQty({{ $id }}, -1, {{ $stock }})"
+                                {{ $item['qty'] <= 1 || $stockOut ? 'disabled' : '' }}>−</button>
+                        <span class="cart-qty-val" id="qty-{{ $id }}">{{ $item['qty'] }}</span>
+                        <button type="button" class="cart-qty-btn"
+                                onclick="ajaxQty({{ $id }}, 1, {{ $stock }})"
+                                {{ ($stock > 0 && $item['qty'] >= $stock) || $stockOut ? 'disabled' : '' }}>+</button>
+                    </div>
+                    <form action="{{ route('cart.remove', $id) }}" method="POST" style="display:inline;">
+                        @csrf
+                        <button type="button" onclick="removeItem({{ $id }})" class="cart-remove-btn">Hapus</button>
+                    </form>
+                </td>
+                <td class="cart-subtotal" id="sub-{{ $id }}">
+                    {{ $stockOut ? '—' : 'Rp '.number_format($subtotal,0,',','.') }}
+                </td>
+            </tr>
+            @endforeach
+            </tbody>
+        </table>
+
+        <div class="cart-mobile">
+            @foreach($group['items'] as $id => $item)
+            @php
+                $finalPrice    = (int)$item['price'];
+                $originalPrice = (int)($item['original_price'] ?? $finalPrice);
+                $hasDiscount   = $originalPrice > $finalPrice;
+                $subtotal      = $finalPrice * $item['qty'];
+                $stock         = (int)($item['stock'] ?? 999);
+                $stockOut      = $stock === 0;
+                $isSelected    = (bool)($item['is_selected'] ?? true);
+            @endphp
+            <div class="cart-card" id="row-m-{{ $id }}">
+                <div class="cart-card-top">
+                    <input type="checkbox"
+                           class="item-check item-check-{{ $storeKey }}"
+                           data-id="{{ $id }}"
+                           data-price="{{ $finalPrice }}"
+                           data-qty="{{ $item['qty'] }}"
+                           {{ $isSelected && !$stockOut ? 'checked' : '' }}
+                           {{ $stockOut ? 'disabled' : '' }}
+                           onchange="onItemCheck(this, {{ $id }})">
+                    <a href="{{ route('product.show', $id) }}">
+                        <img src="{{ asset($item['image'] ?? 'images/placeholder.jpg') }}"
+                             class="cart-card-img" alt="{{ $item['name'] }}"
+                             style="{{ $stockOut ? 'opacity:.4;' : '' }}"
+                             onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
+                    </a>
+                    <div class="cart-card-info">
+                        <a href="{{ route('product.show', $id) }}" class="cart-product-name">{{ $item['name'] }}</a>
+                        @if($stockOut)
+                            <span class="stock-out-badge">Stok Habis</span>
                         @else
-                            <p class="price-final">Rp {{ number_format($finalPrice,0,',','.') }}</p>
+                            <p class="price-final" style="margin-top:3px;">Rp {{ number_format($finalPrice,0,',','.') }}</p>
+                            @if($hasDiscount)
+                            <p class="price-original">Rp {{ number_format($originalPrice,0,',','.') }}</p>
+                            @endif
                         @endif
-                    </td>
-                    <td>
+                    </div>
+                </div>
+                <div class="cart-card-bottom">
+                    <form action="{{ route('cart.remove', $id) }}" method="POST" style="display:inline;">
+                        @csrf
+                        <button type="submit" class="cart-remove-btn" style="margin-top:0;">Hapus</button>
+                    </form>
+                    <div style="display:flex;align-items:center;gap:10px;">
+                        <span class="cart-subtotal" id="sub-m-{{ $id }}">
+                            {{ $stockOut ? '—' : 'Rp '.number_format($subtotal,0,',','.') }}
+                        </span>
                         <div class="cart-qty-wrap">
                             <button type="button" class="cart-qty-btn"
                                     onclick="ajaxQty({{ $id }}, -1, {{ $stock }})"
                                     {{ $item['qty'] <= 1 || $stockOut ? 'disabled' : '' }}>−</button>
-                            <span class="cart-qty-val" id="qty-{{ $id }}">{{ $item['qty'] }}</span>
+                            <span class="cart-qty-val" id="qty-m-{{ $id }}">{{ $item['qty'] }}</span>
                             <button type="button" class="cart-qty-btn"
                                     onclick="ajaxQty({{ $id }}, 1, {{ $stock }})"
                                     {{ ($stock > 0 && $item['qty'] >= $stock) || $stockOut ? 'disabled' : '' }}>+</button>
                         </div>
-                        <form action="{{ route('cart.remove', $id) }}" method="POST" style="display:inline;">
-                            @csrf
-                            <button type="button" onclick="removeItem({{ $id }})" class="cart-remove-btn">Hapus</button>
-                        </form>
-                    </td>
-                    <td class="cart-subtotal" id="sub-{{ $id }}">
-                        {{ $stockOut ? '—' : 'Rp '.number_format($subtotal,0,',','.') }}
-                    </td>
-                </tr>
-                @endforeach
-                </tbody>
-            </table>
-
-            <div class="cart-mobile">
-                @foreach($group['items'] as $id => $item)
-                @php
-                    $finalPrice    = (int)$item['price'];
-                    $originalPrice = (int)($item['original_price'] ?? $finalPrice);
-                    $hasDiscount   = $originalPrice > $finalPrice;
-                    $subtotal      = $finalPrice * $item['qty'];
-                    $stock         = (int)($item['stock'] ?? 999);
-                    $stockOut      = $stock === 0;
-                    $isSelected    = (bool)($item['is_selected'] ?? true);
-                @endphp
-                <div class="cart-card" id="row-m-{{ $id }}">
-                    <div class="cart-card-top">
-                        <input type="checkbox"
-                               class="item-check item-check-{{ $storeKey }}"
-                               data-id="{{ $id }}"
-                               data-price="{{ $finalPrice }}"
-                               data-qty="{{ $item['qty'] }}"
-                               {{ $isSelected && !$stockOut ? 'checked' : '' }}
-                               {{ $stockOut ? 'disabled' : '' }}
-                               onchange="onItemCheck(this, {{ $id }})">
-                        <a href="{{ route('product.show', $id) }}">
-                            <img src="{{ asset($item['image'] ?? 'images/placeholder.jpg') }}"
-                                 class="cart-card-img" alt="{{ $item['name'] }}"
-                                 style="{{ $stockOut ? 'opacity:.4;' : '' }}"
-                                 onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
-                        </a>
-                        <div class="cart-card-info">
-                            <a href="{{ route('product.show', $id) }}" class="cart-product-name">{{ $item['name'] }}</a>
-                            @if($stockOut)
-                                <span class="stock-out-badge">Stok habis</span>
-                            @else
-                                <p class="price-final" style="margin-top:3px;">Rp {{ number_format($finalPrice,0,',','.') }}</p>
-                                @if($hasDiscount)
-                                <p class="price-original">Rp {{ number_format($originalPrice,0,',','.') }}</p>
-                                @endif
-                            @endif
-                        </div>
-                    </div>
-                    <div class="cart-card-bottom">
-                        <form action="{{ route('cart.remove', $id) }}" method="POST" style="display:inline;">
-                            @csrf
-                            <button type="submit" class="cart-remove-btn" style="margin-top:0;">Hapus</button>
-                        </form>
-                        <div style="display:flex;align-items:center;gap:10px;">
-                            <span class="cart-subtotal" id="sub-m-{{ $id }}">
-                                {{ $stockOut ? '—' : 'Rp '.number_format($subtotal,0,',','.') }}
-                            </span>
-                            <div class="cart-qty-wrap">
-                                <button type="button" class="cart-qty-btn"
-                                        onclick="ajaxQty({{ $id }}, -1, {{ $stock }})"
-                                        {{ $item['qty'] <= 1 || $stockOut ? 'disabled' : '' }}>−</button>
-                                <span class="cart-qty-val" id="qty-m-{{ $id }}">{{ $item['qty'] }}</span>
-                                <button type="button" class="cart-qty-btn"
-                                        onclick="ajaxQty({{ $id }}, 1, {{ $stock }})"
-                                        {{ ($stock > 0 && $item['qty'] >= $stock) || $stockOut ? 'disabled' : '' }}>+</button>
-                            </div>
-                        </div>
                     </div>
                 </div>
-                @endforeach
             </div>
+            @endforeach
         </div>
-        @endforeach
     </div>
+    @endforeach
 
-    {{-- Form checkout --}}
+    @if(!empty($unavailable) && count($unavailable) > 0)
+    <div style="margin-top:28px;" id="unavailableSection">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;padding-bottom:10px;border-bottom:.5px solid rgba(11,42,74,.06);">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="rgba(11,42,74,.3)" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="4.93" y1="4.93" x2="19.07" y2="19.07"/></svg>
+            <p style="font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(11,42,74,.35);">
+                Produk Tidak Tersedia ({{ count($unavailable) }})
+            </p>
+        </div>
+        <div style="background:white;border-radius:12px;border:.5px solid rgba(11,42,74,.08);overflow:hidden;">
+            @foreach($unavailable as $itemId => $item)
+            @php
+                $isActive    = $item['is_active'] ?? true;
+                $storeActive = $item['store_is_active'] ?? true;
+
+                if (!$isActive) {
+                    $badgeText  = 'Diarsipkan';
+                    $badgeStyle = 'background:rgba(0,0,0,.05);color:rgba(11,42,74,.4);border:.5px solid rgba(11,42,74,.1);';
+                } else {
+                    $badgeText  = 'Toko Nonaktif';
+                    $badgeStyle = 'background:rgba(0,0,0,.05);color:rgba(11,42,74,.4);border:.5px solid rgba(11,42,74,.1);';
+                }
+            @endphp
+            <div style="display:flex;align-items:center;gap:12px;padding:13px 16px;border-bottom:.5px solid rgba(11,42,74,.04);">
+                <a href="{{ route('product.show', $itemId) }}" style="flex-shrink:0;">
+                    <img src="{{ asset($item['image'] ?? 'images/placeholder.jpg') }}"
+                         style="width:52px;height:52px;object-fit:cover;border-radius:8px;opacity:.4;border:.5px solid rgba(11,42,74,.08);"
+                         onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
+                </a>
+                <div style="flex:1;min-width:0;">
+                    <a href="{{ route('product.show', $itemId) }}"
+                       style="font-size:13px;font-weight:500;color:rgba(11,42,74,.4);text-decoration:none;display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;"
+                       onmouseover="this.style.color='#0b2a4a'" onmouseout="this.style.color='rgba(11,42,74,.4)'">
+                        {{ $item['name'] }}
+                    </a>
+                    <div style="margin-top:5px;display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
+                        <span style="display:inline-block;font-size:10px;padding:2px 9px;border-radius:100px;letter-spacing:.04em;{{ $badgeStyle }}">
+                            {{ $badgeText }}
+                        </span>
+                        @if(($item['store_name'] ?? 'Taku Official') !== 'Taku Official')
+                        <span style="font-size:11px;color:rgba(11,42,74,.25);">{{ $item['store_name'] }}</span>
+                        @endif
+                    </div>
+                </div>
+                <div style="display:flex;align-items:center;gap:10px;flex-shrink:0;">
+                    <span style="font-size:12px;color:rgba(11,42,74,.25);">× {{ $item['qty'] }}</span>
+                    <form action="{{ route('cart.remove', $itemId) }}" method="POST">
+                        @csrf
+                        <button type="submit"
+                                style="font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:#c0392b;background:none;border:.5px solid rgba(192,57,43,.2);border-radius:6px;padding:4px 10px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .2s;"
+                                onmouseover="this.style.background='#c0392b';this.style.color='white'"
+                                onmouseout="this.style.background='none';this.style.color='#c0392b'">
+                            Hapus
+                        </button>
+                    </form>
+                </div>
+            </div>
+            @endforeach
+        </div>
+    </div>
+    @endif
+
+</div>
+
     <form action="{{ route('checkout.select') }}" method="POST" id="checkoutForm">
         @csrf
         <div id="selectedInputs"></div>
@@ -767,7 +827,7 @@ document.addEventListener('DOMContentLoaded', () => {
     syncStoreChecks();
     setTimeout(() => updateSummary(), 50);
     const hasStockOut = document.querySelector('.stock-out-badge');
-    if (hasStockOut) setTimeout(() => showToast('Beberapa produk di keranjang habis stok.', 'warning'), 600);
+    if (hasStockOut) setTimeout(() => showToast('Beberapa produk di keranjang stok habis.', 'warning'), 600);
 });
 </script>
 
