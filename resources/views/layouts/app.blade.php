@@ -6,6 +6,7 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <meta name="google-site-verification" content="-oQVas1lrfhToFbwR2hZS-RWgylnNxY2lDG0V-s03j0" />
 
+    <meta name="theme-color" content="#111111">
     <title>@yield('title', 'Taku — Premium Plant Marketplace Indonesia')</title>
     <meta name="description" content="@yield('meta_description', 'Taku menghadirkan tanaman premium pilihan untuk ruang modern kamu. Temukan koleksi plants berkualitas, estetik, dan mudah dirawat — dikirim ke seluruh Indonesia.')">
     <meta name="keywords" content="taku, premium plants, tanaman hias premium, jual tanaman online, tanaman indoor, tanaman estetik, plant marketplace, tanaman untuk apartemen, tanaman dekorasi rumah, beli tanaman online Indonesia">

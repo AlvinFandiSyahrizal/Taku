@@ -1,5 +1,3 @@
-
-
 <!DOCTYPE html>
 <html lang="{{ app()->getLocale() }}">
 <head>
@@ -93,8 +91,6 @@
 </head>
 <body>
 
-
-
 <div class="sidebar-overlay" id="sidebarOverlay" onclick="closeSidebar()"></div>
 
 <aside class="admin-sidebar" id="adminSidebar">
@@ -127,6 +123,18 @@
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
             Produk Saya
         </a>
+
+        {{-- ── Kategori Toko (merchant punya sendiri) ── --}}
+        <a href="{{ route('merchant.categories.index') }}" class="sidebar-link {{ request()->routeIs('merchant.categories*') ? 'active' : '' }}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <path d="M3 6h18M3 12h18M3 18h18"/>
+                <circle cx="6" cy="6" r="1.5" fill="currentColor" stroke="none"/>
+                <circle cx="6" cy="12" r="1.5" fill="currentColor" stroke="none"/>
+                <circle cx="6" cy="18" r="1.5" fill="currentColor" stroke="none"/>
+            </svg>
+            Kategori Toko
+        </a>
+
         <a href="{{ route('merchant.store.appearance') }}" class="sidebar-link {{ request()->routeIs('merchant.store.appearance') ? 'active' : '' }}">
             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
             Tampilan Toko
@@ -142,13 +150,12 @@
             @endif
         </a>
 
-        <a href="{{ route('merchant.reports.index') }}"
-            class="sidebar-link {{ request()->routeIs('merchant.reports*') ? 'active' : '' }}">
-                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-                    <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
-                    <line x1="6" y1="20" x2="6" y2="14"/>
-                </svg>
-                Laporan & Keuangan
+        <a href="{{ route('merchant.reports.index') }}" class="sidebar-link {{ request()->routeIs('merchant.reports*') ? 'active' : '' }}">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/>
+                <line x1="6" y1="20" x2="6" y2="14"/>
+            </svg>
+            Laporan & Keuangan
         </a>
 
         <p class="sidebar-section-label">Akun</p>
@@ -189,7 +196,7 @@
             <h1 class="admin-topbar-title">@yield('page-title', 'Dashboard')</h1>
         </div>
         <div class="admin-topbar-right">
-                @include('merchant.partials.bell')
+            @include('merchant.partials.bell')
             <a href="{{ route('store.show', Auth::user()->store?->slug ?? '#') }}" class="topbar-visit-btn" target="_blank">↗ Lihat Toko</a>
         </div>
     </div>

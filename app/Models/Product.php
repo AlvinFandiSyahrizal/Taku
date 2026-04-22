@@ -22,22 +22,25 @@ class Product extends Model
         'stock',
         'is_featured',
         'discount_percent',
-
+        'height',
+        'height_unit',
+        'diameter',
+        'diameter_unit',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'price'     => 'integer',
-        'is_featured' => 'boolean',
-        'stock'       => 'integer',
+        'is_active'        => 'boolean',
+        'price'            => 'integer',
+        'is_featured'      => 'boolean',
+        'stock'            => 'integer',
         'discount_percent' => 'integer',
-
+        'height'           => 'decimal:2',
+        'diameter'         => 'decimal:2',
     ];
 
     protected static function boot()
     {
         parent::boot();
-
         static::creating(function ($product) {
             if (empty($product->slug)) {
                 $product->slug = Str::slug($product->name);
@@ -45,9 +48,16 @@ class Product extends Model
         });
     }
 
+    // ── Relasi 
+
     public function images()
     {
         return $this->hasMany(ProductImage::class)->orderBy('sort');
+    }
+
+    public function variants()
+    {
+        return $this->hasMany(ProductVariant::class)->orderBy('sort');
     }
 
     public function orderItems()
@@ -55,14 +65,30 @@ class Product extends Model
         return $this->hasMany(OrderItem::class);
     }
 
-public function store()
+    public function store()
     {
         return $this->belongsTo(Store::class);
     }
 
-    public function isMerchantProduct()
+    public function category()
+    {
+        return $this->belongsTo(Category::class);
+    }
+
+    public function isMerchantProduct(): bool
     {
         return $this->store_id !== null;
+    }
+
+    /**
+     * Apakah produk ini punya variant ukuran?
+     */
+    public function hasVariants(): bool
+    {
+        if ($this->relationLoaded('variants')) {
+            return $this->variants->isNotEmpty();
+        }
+        return $this->variants()->exists();
     }
 
     public function getDesc($locale = 'id')
@@ -75,7 +101,7 @@ public function store()
         return $locale === 'en' ? $this->detail_en : $this->detail_id;
     }
 
-    public function getPriceFormatted()
+    public function getPriceFormatted(): string
     {
         return 'Rp ' . number_format($this->price, 0, ',', '.');
     }
@@ -85,34 +111,68 @@ public function store()
         return $query->where('is_active', true);
     }
 
-    public function category()
+    public function isInStock(): bool
     {
-        return $this->belongsTo(Category::class);
+        if ($this->hasVariants()) {
+            return $this->variants->sum('stock') > 0;
+        }
+        return $this->stock > 0;
     }
 
-    public function isInStock(): bool {
-        return $this->stock > 0;
-
+    public function isLowStock(): bool
+    {
+        if ($this->hasVariants()) {
+            $total = $this->variants->sum('stock');
+            return $total > 0 && $total <= 5;
         }
-
-    public function isLowStock(): bool {
         return $this->stock > 0 && $this->stock <= 5;
+    }
 
+    public function getFinalPrice(): int
+    {
+        if ($this->discount_percent > 0) {
+            return (int) round($this->price * (1 - $this->discount_percent / 100));
         }
+        return $this->price;
+    }
 
-        public function getFinalPrice(): int {
-            if ($this->discount_percent > 0) {
-                return (int) round($this->price * (1 - $this->discount_percent / 100));
-            }
-            return $this->price;
+    public function getFinalPriceFormatted(): string
+    {
+        return 'Rp ' . number_format($this->getFinalPrice(), 0, ',', '.');
+    }
+
+    public function hasDiscount(): bool
+    {
+        return $this->discount_percent > 0;
+    }
+
+    /**
+     * Harga terendah dari semua variant — untuk listing produk ("Mulai dari Rp X")
+     */
+    public function getMinVariantPrice(): int
+    {
+        if ($this->hasVariants()) {
+            return (int) $this->variants->min('price');
         }
+        return $this->getFinalPrice();
+    }
 
-        public function getFinalPriceFormatted(): string {
-            return 'Rp ' . number_format($this->getFinalPrice(), 0, ',', '.');
-        }
+    public function getMinVariantPriceFormatted(): string
+    {
+        return 'Rp ' . number_format($this->getMinVariantPrice(), 0, ',', '.');
+    }
 
-        public function hasDiscount(): bool {
-            return $this->discount_percent > 0;
-        }
+    public function getHeightLabel(): ?string
+    {
+        if (!$this->height) return null;
+        $val = $this->height == (int) $this->height ? (int) $this->height : $this->height;
+        return $val . ' ' . ($this->height_unit ?? 'cm');
+    }
 
+    public function getDiameterLabel(): ?string
+    {
+        if (!$this->diameter) return null;
+        $val = $this->diameter == (int) $this->diameter ? (int) $this->diameter : $this->diameter;
+        return $val . ' ' . ($this->diameter_unit ?? 'cm');
+    }
 }

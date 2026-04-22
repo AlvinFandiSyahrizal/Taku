@@ -33,6 +33,8 @@ use App\Http\Controllers\Merchant\NotificationController as MerchantNotification
 use App\Http\Controllers\Admin\StoreBannerController;
 use App\Http\Controllers\Admin\StoreSectionController;
 use App\Http\Controllers\Admin\NotificationController as AdminNotificationController;
+use App\Http\Controllers\Merchant\CategoryController as MerchantCategoryController;
+
 
 
 Route::get('/sitemap.xml', function () {
@@ -341,6 +343,13 @@ Route::middleware(['auth', 'isMerchant'])
         Route::put('/products/{product}', [MerchantProductController::class, 'update'])->name('products.update');
         Route::delete('/products/{product}', [MerchantProductController::class, 'destroy'])->name('products.destroy');
         Route::post('/products/{product}/toggle', [MerchantProductController::class, 'toggleActive'])->name('products.toggle');
+
+        // Categories (merchant punya sendiri)
+        Route::get('/categories', [MerchantCategoryController::class, 'index'])->name('categories.index');
+        Route::post('/categories', [MerchantCategoryController::class, 'store'])->name('categories.store');
+        Route::put('/categories/{category}', [MerchantCategoryController::class, 'update'])->name('categories.update');
+        Route::delete('/categories/{category}', [MerchantCategoryController::class, 'destroy'])->name('categories.destroy');
+        Route::post('/categories/{category}/toggle', [MerchantCategoryController::class, 'toggle'])->name('categories.toggle');
 
         // Orders
         Route::get('/orders/export', [MerchantOrderController::class, 'export'])->name('orders.export');

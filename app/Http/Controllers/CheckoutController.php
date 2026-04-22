@@ -6,6 +6,7 @@ use App\Events\OrderPlaced;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use App\Models\ProductVariant;
 use App\Models\Store;
 use App\Models\UserAddress;
 use App\Services\CartService;
@@ -38,7 +39,7 @@ class CheckoutController extends Controller
             ? $cart
             : array_filter(
                 $cart,
-                fn ($item, $id) => in_array((string) $id, $selected),
+                fn ($item, $key) => in_array((string) $key, $selected),
                 ARRAY_FILTER_USE_BOTH
             );
 
@@ -49,7 +50,7 @@ class CheckoutController extends Controller
         }
 
         $grouped = [];
-        foreach ($checkoutCart as $id => $item) {
+        foreach ($checkoutCart as $key => $item) {
             $storeKey = $item['store_id'] ?? 'official';
 
             if (!isset($grouped[$storeKey])) {
@@ -61,8 +62,8 @@ class CheckoutController extends Controller
                 ];
             }
 
-            $grouped[$storeKey]['items'][$id] = $item;
-            $grouped[$storeKey]['subtotal'] += ((int) $item['price'] * (int) $item['qty']);
+            $grouped[$storeKey]['items'][$key] = $item;
+            $grouped[$storeKey]['subtotal']    += ((int) $item['price'] * (int) $item['qty']);
         }
 
         $total = array_sum(array_column($grouped, 'subtotal'));
@@ -87,86 +88,76 @@ class CheckoutController extends Controller
         }
 
         $request->validate([
-            'name'        => 'required|string|max:100',
-            'phone'       => 'required|string|max:30',
-            'address'     => 'required|string|max:500',
-            'note'        => 'nullable|string|max:300',
-            'use_address' => 'nullable',
+            'name'    => 'required|string|max:100',
+            'phone'   => 'required|string|max:30',
+            'address' => 'required|string|max:500',
+            'note'    => 'nullable|string|max:300',
         ]);
 
-        $selected = session('checkout_selected', []);
-        $cart     = $this->cart->get();
-
+        $selected     = session('checkout_selected', []);
+        $cart         = $this->cart->get();
         $checkoutCart = empty($selected)
             ? $cart
             : array_filter(
                 $cart,
-                fn ($item, $id) => in_array((string) $id, $selected),
+                fn ($item, $key) => in_array((string) $key, $selected),
                 ARRAY_FILTER_USE_BOTH
             );
 
         if (empty($checkoutCart)) {
-            return redirect()
-                ->route('cart.index')
-                ->with('error', 'Tidak ada produk yang dipilih.');
+            return redirect()->route('cart.index')->with('error', 'Tidak ada produk yang dipilih.');
         }
 
         DB::beginTransaction();
 
         try {
-            /*
-            |--------------------------------------------------------------------------
-            | VALIDASI PRODUK
-            |--------------------------------------------------------------------------
-            */
-            foreach ($checkoutCart as $productId => $item) {
-                if (!is_numeric($productId)) {
-                    continue;
-                }
+            // ── Validasi semua item sebelum buat order
+            foreach ($checkoutCart as $key => $item) {
+                $productId = $item['product_id'];
+                $variantId = $item['variant_id'] ?? null;
+
+                if (!is_numeric($productId)) continue;
 
                 $product = Product::with('store')->find((int) $productId);
 
                 if (!$product) {
                     throw new \Exception("Produk {$item['name']} tidak ditemukan.");
                 }
-
                 if (!$product->is_active) {
                     throw new \Exception("Produk {$product->name} sedang nonaktif.");
                 }
-
                 if ($product->store && $product->store->status !== 'active') {
                     throw new \Exception("Toko {$product->store->name} sedang nonaktif.");
                 }
 
-                if ($product->stock < (int) $item['qty']) {
-                    throw new \Exception("Stok {$product->name} tidak mencukupi.");
+                if ($variantId) {
+                    $variant = ProductVariant::find($variantId);
+                    if (!$variant) {
+                        throw new \Exception("Variant produk {$product->name} tidak ditemukan.");
+                    }
+                    if ($variant->stock < (int) $item['qty']) {
+                        throw new \Exception("Stok {$product->name} ({$variant->getLabel()}) tidak mencukupi.");
+                    }
+                } else {
+                    if ($product->stock < (int) $item['qty']) {
+                        throw new \Exception("Stok {$product->name} tidak mencukupi.");
+                    }
                 }
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | GROUP PER TOKO
-            |--------------------------------------------------------------------------
-            */
-            $grouped = [];
-
-            foreach ($checkoutCart as $id => $item) {
+            // ── Kelompokkan per toko
+            $grouped  = [];
+            foreach ($checkoutCart as $key => $item) {
                 $storeKey = $item['store_id'] ?? 'official';
-
                 $grouped[$storeKey]['store_id']   = $item['store_id'] ?? null;
                 $grouped[$storeKey]['store_name'] = $item['store_name'] ?? 'Taku Official';
-                $grouped[$storeKey]['items'][$id] = $item;
+                $grouped[$storeKey]['items'][$key] = $item;
             }
 
             $orders   = [];
             $waUrls   = [];
             $waNumber = config('app.wa_number', '6281324683769');
 
-            /*
-            |--------------------------------------------------------------------------
-            | CREATE ORDER PER TOKO
-            |--------------------------------------------------------------------------
-            */
             foreach ($grouped as $group) {
                 $groupTotal = array_sum(array_map(
                     fn ($i) => ((int) $i['price'] * (int) $i['qty']),
@@ -185,36 +176,41 @@ class CheckoutController extends Controller
                     'status'     => 'pending',
                 ]);
 
-                foreach ($group['items'] as $productId => $item) {
+                foreach ($group['items'] as $key => $item) {
+                    $productId = $item['product_id'];
+                    $variantId = $item['variant_id'] ?? null;
+
                     OrderItem::create([
                         'order_id'      => $order->id,
                         'product_id'    => is_numeric($productId) ? (int) $productId : null,
                         'product_name'  => $item['name'],
                         'product_image' => $item['image'] ?? null,
+                        'variant_label' => $item['variant_label'] ?? null,
                         'price'         => (int) $item['price'],
                         'qty'           => (int) $item['qty'],
                         'subtotal'      => ((int) $item['price'] * (int) $item['qty']),
                     ]);
 
+                    // Kurangi stok
                     if (is_numeric($productId)) {
-                        Product::where('id', (int) $productId)
-                            ->decrement('stock', (int) $item['qty']);
+                        if ($variantId) {
+                            ProductVariant::where('id', $variantId)
+                                ->decrement('stock', (int) $item['qty']);
+                        } else {
+                            Product::where('id', (int) $productId)
+                                ->decrement('stock', (int) $item['qty']);
+                        }
                     }
                 }
 
                 OrderPlaced::dispatch($order);
-
                 $orders[] = $order;
 
-                /*
-                |--------------------------------------------------------------------------
-                | WHATSAPP MESSAGE
-                |--------------------------------------------------------------------------
-                */
+                // ── Build WA message
                 $itemLines = '';
-
                 foreach ($group['items'] as $item) {
-                    $itemLines .= "- {$item['name']} (x{$item['qty']}) — Rp "
+                    $variantInfo = $item['variant_label'] ? " [{$item['variant_label']}]" : '';
+                    $itemLines  .= "- {$item['name']}{$variantInfo} (x{$item['qty']}) — Rp "
                         . number_format($item['price'], 0, ',', '.')
                         . "\n";
                 }
@@ -234,7 +230,6 @@ class CheckoutController extends Controller
                     : $waNumber;
 
                 $cleanPhone = preg_replace('/[^0-9]/', '', $storePhone);
-
                 if (str_starts_with($cleanPhone, '0')) {
                     $cleanPhone = '62' . substr($cleanPhone, 1);
                 }
@@ -242,11 +237,7 @@ class CheckoutController extends Controller
                 $waUrls[] = 'https://wa.me/' . $cleanPhone . '?text=' . urlencode($message);
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | SAVE NEW ADDRESS
-            |--------------------------------------------------------------------------
-            */
+            // ── Simpan alamat baru
             if (
                 $request->boolean('save_new_address') &&
                 $request->get('use_address') === 'new'
@@ -272,11 +263,6 @@ class CheckoutController extends Controller
                 }
             }
 
-            /*
-            |--------------------------------------------------------------------------
-            | CLEAR CART
-            |--------------------------------------------------------------------------
-            */
             $this->cart->removeItems(array_keys($checkoutCart));
             session()->forget('checkout_selected');
 
@@ -291,11 +277,7 @@ class CheckoutController extends Controller
 
         } catch (\Throwable $e) {
             DB::rollBack();
-
-            return redirect()
-                ->back()
-                ->withInput()
-                ->with('error', $e->getMessage());
+            return redirect()->back()->withInput()->with('error', $e->getMessage());
         }
     }
 
@@ -304,10 +286,7 @@ class CheckoutController extends Controller
         $waUrls     = session('pending_wa_urls', []);
         $orderCodes = session('last_orders', []);
 
-        session()->forget([
-            'pending_wa_urls',
-            'last_orders',
-        ]);
+        session()->forget(['pending_wa_urls', 'last_orders']);
 
         return view('pages.checkout-success', compact('waUrls', 'orderCodes'));
     }

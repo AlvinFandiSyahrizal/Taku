@@ -134,7 +134,6 @@ class StoreController extends Controller
         $subSlug      = $request->get('sub');
         $sort         = $request->get('sort', 'latest');
 
-        // ── Kategori sidebar: parent categories yang punya produk di toko ini
         $allProducts = Product::where('store_id', $store->id)
             ->where('is_active', true)
             ->pluck('category_id')
@@ -142,26 +141,22 @@ class StoreController extends Controller
             ->unique()
             ->values();
 
-        // Ambil kategori parent yang punya produk (langsung atau via anak)
         $sidebarCategories = Category::with(['children' => function ($q) use ($allProducts) {
                 $q->whereIn('id', $allProducts)->active()->orderBy('sort');
             }])
             ->whereNull('parent_id')
             ->active()
             ->where(function ($q) use ($allProducts) {
-                // parent langsung punya produk ATAU punya anak yang punya produk
                 $q->whereIn('id', $allProducts)
                   ->orWhereHas('children', fn($c) => $c->whereIn('id', $allProducts));
             })
             ->orderBy('sort')
             ->get();
 
-        // ── Query produk utama (untuk katalog & pagination)
         $productQuery = Product::where('store_id', $store->id)
             ->where('is_active', true)
             ->with('images', 'category');
 
-        // Filter kategori
         if ($subSlug) {
             $productQuery->whereHas('category', fn($q) => $q->where('slug', $subSlug));
         } elseif ($categorySlug) {
@@ -171,7 +166,6 @@ class StoreController extends Controller
             });
         }
 
-        // Sort
         match ($sort) {
             'oldest'    => $productQuery->oldest(),
             'price_asc' => $productQuery->orderBy('price'),
@@ -183,19 +177,16 @@ class StoreController extends Controller
         $products    = $productQuery->paginate($perPage)->withQueryString();
         $totalProducts = Product::where('store_id', $store->id)->where('is_active', true)->count();
 
-        // ── Banners per position
         $bannersTop           = StoreBanner::where('store_id', $store->id)->active()->where('position', 'top')->orderBy('sort')->get();
         $bannersAfterSections = StoreBanner::where('store_id', $store->id)->active()->where('position', 'after_sections')->orderBy('sort')->get();
         $bannersBottom        = StoreBanner::where('store_id', $store->id)->active()->where('position', 'bottom')->orderBy('sort')->get();
 
-        // ── Sections
         $sections = StoreSection::where('store_id', $store->id)
             ->where('is_active', true)
             ->with(['products' => fn($q) => $q->where('is_active', true)->with('images', 'category')])
             ->orderBy('sort')
             ->get();
 
-        // Active category objects for breadcrumb
         $activeCategory    = $categorySlug ? Category::where('slug', $categorySlug)->first() : null;
         $activeSubCategory = $subSlug      ? Category::where('slug', $subSlug)->first()      : null;
 
@@ -207,9 +198,6 @@ class StoreController extends Controller
         ));
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    // OFFICIAL STORE
-    // ─────────────────────────────────────────────────────────────────────────
     public function showOfficial(Request $request)
     {
         $officialPhone = \App\Models\Setting::get('official_store_phone', '');
@@ -231,7 +219,6 @@ class StoreController extends Controller
         $subSlug      = $request->get('sub');
         $sort         = $request->get('sort', 'latest');
 
-        // Kategori sidebar
         $allProducts = Product::whereNull('store_id')->where('is_active', true)
             ->pluck('category_id')->filter()->unique()->values();
 
@@ -247,7 +234,6 @@ class StoreController extends Controller
             ->orderBy('sort')
             ->get();
 
-        // Query produk
         $productQuery = Product::whereNull('store_id')
             ->where('is_active', true)
             ->with('images', 'category');

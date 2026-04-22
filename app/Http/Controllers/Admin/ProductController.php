@@ -3,14 +3,27 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
+use App\Models\ProductVariant;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
+    /** Ambil kategori global (admin) beserta children, untuk dropdown form produk */
+    private function getCategories()
+    {
+        return Category::whereNull('store_id')
+            ->whereNull('parent_id')
+            ->with(['children' => fn($q) => $q->active()->orderBy('sort')])
+            ->active()
+            ->orderBy('sort')
+            ->get();
+    }
+
     public function index()
     {
         $products = Product::whereNull('store_id')->with('images')->latest()->get();
@@ -19,25 +32,37 @@ class ProductController extends Controller
 
     public function create()
     {
-        return view('admin.products.create');
+        $categories = $this->getCategories();
+        return view('admin.products.create', compact('categories'));
     }
 
     public function store(Request $request)
     {
-    $request->validate([
-        'name'             => 'required|string|max:200',
-        'price'            => 'required|integer|min:0',
-        'desc_id'          => 'nullable|string',
-        'desc_en'          => 'nullable|string',
-        'detail_id'        => 'nullable|string',
-        'detail_en'        => 'nullable|string',
-        'image'            => 'nullable|image|max:2048',
-        'images.*'         => 'nullable|image|max:2048',
-        'is_active'        => 'nullable',
-        'category_id'      => 'nullable|exists:categories,id',
-        'stock'            => 'nullable|integer|min:0',
-        'discount_percent' => 'nullable|integer|min:0|max:100',
-    ]);
+        $request->validate([
+            'name'             => 'required|string|max:200',
+            'price'            => 'required|integer|min:0',
+            'desc_id'          => 'nullable|string',
+            'desc_en'          => 'nullable|string',
+            'detail_id'        => 'nullable|string',
+            'detail_en'        => 'nullable|string',
+            'image'            => 'nullable|image|max:2048',
+            'images.*'         => 'nullable|image|max:2048',
+            'is_active'        => 'nullable',
+            'category_id'      => 'nullable|exists:categories,id',
+            'stock'            => 'nullable|integer|min:0',
+            'discount_percent' => 'nullable|integer|min:0|max:100',
+            'height'           => 'nullable|numeric|min:0',
+            'height_unit'      => 'nullable|in:cm,meter',
+            'diameter'         => 'nullable|numeric|min:0',
+            'diameter_unit'    => 'nullable|in:cm,meter',
+            'variants'                 => 'nullable|array',
+            'variants.*.height'        => 'nullable|numeric|min:0',
+            'variants.*.height_unit'   => 'nullable|in:cm,meter',
+            'variants.*.diameter'      => 'nullable|numeric|min:0',
+            'variants.*.diameter_unit' => 'nullable|in:cm,meter',
+            'variants.*.price'         => 'required_with:variants|integer|min:0',
+            'variants.*.stock'         => 'nullable|integer|min:0',
+        ]);
 
         $imagePath = null;
         if ($request->hasFile('image')) {
@@ -45,20 +70,26 @@ class ProductController extends Controller
         }
 
         $product = Product::create([
-            'name'      => $request->name,
-            'slug'      => Str::slug($request->name) . '-' . time(),
-            'price'     => $request->price,
-            'desc_id'   => $request->desc_id,
-            'desc_en'   => $request->desc_en,
-            'detail_id' => $request->detail_id,
-            'detail_en' => $request->detail_en,
-            'image'     => $imagePath ? 'storage/' . $imagePath : null,
-            'is_active' => $request->boolean('is_active', true),
-            'stock'       => (int) $request->get('stock', 0),
-            'is_featured' => $request->boolean('is_featured', false),
+            'name'             => $request->name,
+            'slug'             => Str::slug($request->name) . '-' . time(),
+            'price'            => $request->price,
+            'desc_id'          => $request->desc_id,
+            'desc_en'          => $request->desc_en,
+            'detail_id'        => $request->detail_id,
+            'detail_en'        => $request->detail_en,
+            'image'            => $imagePath ? 'storage/' . $imagePath : null,
+            'is_active'        => $request->boolean('is_active', true),
+            'stock'            => (int) $request->get('stock', 0),
+            'is_featured'      => $request->boolean('is_featured', false),
             'discount_percent' => (int) $request->get('discount_percent', 0),
-
+            'category_id'      => $request->category_id ?: null,
+            'height'           => $request->height ?: null,
+            'height_unit'      => $request->height ? ($request->height_unit ?? 'cm') : 'cm',
+            'diameter'         => $request->diameter ?: null,
+            'diameter_unit'    => $request->diameter ? ($request->diameter_unit ?? 'cm') : 'cm',
         ]);
+
+        $this->syncVariants($product, $request->input('variants', []));
 
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $i => $img) {
@@ -77,53 +108,69 @@ class ProductController extends Controller
 
     public function edit(Product $product)
     {
-        $product->load('images');
-        return view('admin.products.edit', compact('product'));
+        $product->load('images', 'variants');
+        $categories = $this->getCategories();
+        return view('admin.products.edit', compact('product', 'categories'));
     }
 
     public function update(Request $request, Product $product)
     {
-    $request->validate([
-        'name'             => 'required|string|max:200',
-        'price'            => 'required|integer|min:0',
-        'desc_id'          => 'nullable|string',
-        'desc_en'          => 'nullable|string',
-        'detail_id'        => 'nullable|string',
-        'detail_en'        => 'nullable|string',
-        'image'            => 'nullable|image|max:2048',
-        'images.*'         => 'nullable|image|max:2048',
-        'is_active'        => 'nullable',
-        'category_id'      => 'nullable|exists:categories,id',
-        'stock'            => 'nullable|integer|min:0',
-        'discount_percent' => 'nullable|integer|min:0|max:100',
-    ]);
+        $request->validate([
+            'name'             => 'required|string|max:200',
+            'price'            => 'required|integer|min:0',
+            'desc_id'          => 'nullable|string',
+            'desc_en'          => 'nullable|string',
+            'detail_id'        => 'nullable|string',
+            'detail_en'        => 'nullable|string',
+            'image'            => 'nullable|image|max:2048',
+            'images.*'         => 'nullable|image|max:2048',
+            'is_active'        => 'nullable',
+            'category_id'      => 'nullable|exists:categories,id',
+            'stock'            => 'nullable|integer|min:0',
+            'discount_percent' => 'nullable|integer|min:0|max:100',
+            'height'           => 'nullable|numeric|min:0',
+            'height_unit'      => 'nullable|in:cm,meter',
+            'diameter'         => 'nullable|numeric|min:0',
+            'diameter_unit'    => 'nullable|in:cm,meter',
+            'variants'                 => 'nullable|array',
+            'variants.*.height'        => 'nullable|numeric|min:0',
+            'variants.*.height_unit'   => 'nullable|in:cm,meter',
+            'variants.*.diameter'      => 'nullable|numeric|min:0',
+            'variants.*.diameter_unit' => 'nullable|in:cm,meter',
+            'variants.*.price'         => 'required_with:variants|integer|min:0',
+            'variants.*.stock'         => 'nullable|integer|min:0',
+        ]);
 
         $currentImage = $product->image;
-
         if ($request->hasFile('image')) {
             if ($currentImage) {
-                $oldPath = str_replace('storage/', '', $currentImage);
-                Storage::disk('public')->delete($oldPath);
+                Storage::disk('public')->delete(str_replace('storage/', '', $currentImage));
             }
-            $newPath = $request->file('image')->store('products', 'public');
+            $newPath      = $request->file('image')->store('products', 'public');
             $currentImage = 'storage/' . $newPath;
         }
 
         $product->update([
-            'name'      => $request->name,
-            'slug'      => Str::slug($request->name) . '-' . $product->id,
-            'price'     => $request->price,
-            'desc_id'   => $request->desc_id,
-            'desc_en'   => $request->desc_en,
-            'detail_id' => $request->detail_id,
-            'detail_en' => $request->detail_en,
-            'image'     => $currentImage,
-            'is_active' => $request->boolean('is_active', true),
-            'stock'       => (int) $request->get('stock', 0),
-            'is_featured' => $request->boolean('is_featured', false),
+            'name'             => $request->name,
+            'slug'             => Str::slug($request->name) . '-' . $product->id,
+            'price'            => $request->price,
+            'desc_id'          => $request->desc_id,
+            'desc_en'          => $request->desc_en,
+            'detail_id'        => $request->detail_id,
+            'detail_en'        => $request->detail_en,
+            'image'            => $currentImage,
+            'is_active'        => $request->boolean('is_active', true),
+            'stock'            => (int) $request->get('stock', 0),
+            'is_featured'      => $request->boolean('is_featured', false),
             'discount_percent' => (int) $request->get('discount_percent', 0),
-
+            'category_id'      => $request->category_id ?: null,
+            'height'           => $request->height ?: null,
+            'height_unit'      => $request->height ? ($request->height_unit ?? 'cm') : 'cm',
+            'diameter'         => $request->diameter ?: null,
+            'diameter_unit'    => $request->diameter ? ($request->diameter_unit ?? 'cm') : 'cm',
         ]);
+
+        $this->syncVariants($product, $request->input('variants', []));
 
         if ($request->hasFile('images')) {
             $lastSort = $product->images()->max('sort') ?? 0;
@@ -144,14 +191,11 @@ class ProductController extends Controller
     public function destroy(Product $product)
     {
         foreach ($product->images as $img) {
-            $path = str_replace('storage/', '', $img->image);
-            Storage::disk('public')->delete($path);
+            Storage::disk('public')->delete(str_replace('storage/', '', $img->image));
         }
         if ($product->image) {
-            $path = str_replace('storage/', '', $product->image);
-            Storage::disk('public')->delete($path);
+            Storage::disk('public')->delete(str_replace('storage/', '', $product->image));
         }
-
         $product->delete();
         return redirect()->route('admin.products.index')
             ->with('success', 'Produk berhasil dihapus.');
@@ -159,9 +203,7 @@ class ProductController extends Controller
 
     public function destroyImage(ProductImage $image)
     {
-        $path = str_replace('storage/', '', $image->image);
-        Storage::disk('public')->delete($path);
-
+        Storage::disk('public')->delete(str_replace('storage/', '', $image->image));
         $image->delete();
         return back()->with('success', 'Gambar berhasil dihapus.');
     }
@@ -171,7 +213,38 @@ class ProductController extends Controller
         $product->update(['is_active' => !$product->is_active]);
         return back();
     }
-    
 
+    private function syncVariants(Product $product, array $variantsInput): void
+    {
+        $incomingIds = [];
 
+        foreach ($variantsInput as $i => $v) {
+            if (empty($v['price'])) continue;
+
+            $data = [
+                'product_id'    => $product->id,
+                'height'        => $v['height'] ?: null,
+                'height_unit'   => $v['height'] ? ($v['height_unit'] ?? 'cm') : 'cm',
+                'diameter'      => $v['diameter'] ?: null,
+                'diameter_unit' => $v['diameter'] ? ($v['diameter_unit'] ?? 'cm') : 'cm',
+                'price'         => (int) $v['price'],
+                'stock'         => (int) ($v['stock'] ?? 0),
+                'sort'          => $i,
+            ];
+
+            if (!empty($v['id'])) {
+                $variant = ProductVariant::where('id', $v['id'])
+                    ->where('product_id', $product->id)->first();
+                if ($variant) {
+                    $variant->update($data);
+                    $incomingIds[] = $variant->id;
+                }
+            } else {
+                $variant       = ProductVariant::create($data);
+                $incomingIds[] = $variant->id;
+            }
+        }
+
+        $product->variants()->whereNotIn('id', $incomingIds)->delete();
+    }
 }

@@ -11,6 +11,7 @@ class OrderItem extends Model
         'product_id',
         'product_name',
         'product_image',
+        'variant_label',
         'price',
         'qty',
         'subtotal',
@@ -31,7 +32,8 @@ class OrderItem extends Model
     {
         return $this->belongsTo(Product::class);
     }
-    public function getSubtotalFormatted()
+
+    public function getSubtotalFormatted(): string
     {
         return 'Rp ' . number_format($this->subtotal, 0, ',', '.');
     }

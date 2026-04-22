@@ -6,37 +6,25 @@
 @php
     app()->setLocale(session('lang', 'id'));
     $locale = session('lang', 'id');
+    $product->load('variants');
+    $hasVariants = $product->hasVariants();
 @endphp
 
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;500&family=DM+Sans:wght@300;400;500&display=swap');
 *{box-sizing:border-box}
-
 :root{
-    --navy:#0b2a4a;
-    --navy-mid:rgba(11,42,74,.55);
-    --navy-soft:rgba(11,42,74,.08);
-    --gold:#c9a96e;
-    --gold-soft:rgba(201,169,110,.12);
-    --gold-border:rgba(201,169,110,.3);
-    --beige:#f5efe6;
-    --beige-mid:#ede5d8;
-    --olive:#4a5240;
-    --olive-soft:rgba(74,82,64,.08);
-    --sand:#d4c5a9;
-    --danger:#c0392b;
-    --success:#1a7a3c;
+    --navy:#0b2a4a;--navy-mid:rgba(11,42,74,.55);--navy-soft:rgba(11,42,74,.08);
+    --gold:#c9a96e;--gold-soft:rgba(201,169,110,.12);--gold-border:rgba(201,169,110,.3);
+    --beige:#f5efe6;--beige-mid:#ede5d8;--olive:#4a5240;--olive-soft:rgba(74,82,64,.08);
+    --sand:#d4c5a9;--danger:#c0392b;--success:#1a7a3c;
 }
-
 .pd-wrap{max-width:1100px;margin:56px auto 80px;padding:0 32px;font-family:'DM Sans',sans-serif;}
 @media(max-width:700px){.pd-wrap{padding:0 16px;margin-top:28px;}}
-
 .pd-flash{background:#f0f7f0;border:.5px solid #b2d9b2;border-radius:8px;padding:12px 20px;font-size:13px;color:#2d6a2d;margin-bottom:32px;display:flex;align-items:center;gap:10px;}
 .pd-flash-dot{width:6px;height:6px;border-radius:50%;background:#2d6a2d;flex-shrink:0;}
-
 .pd-main{display:grid;grid-template-columns:1fr 1fr;gap:60px;align-items:start;}
 @media(max-width:700px){.pd-main{grid-template-columns:1fr;gap:24px;}}
-
 .pd-images{position:sticky;top:84px;}
 @media(max-width:700px){.pd-images{position:static !important;}}
 .pd-main-img-wrap{width:100%;aspect-ratio:1/1;border-radius:16px;overflow:hidden;background:#f7f4ef;margin-bottom:14px;}
@@ -45,7 +33,6 @@
 .pd-thumb{width:64px;height:64px;object-fit:cover;border-radius:8px;cursor:pointer;border:1.5px solid transparent;opacity:.6;transition:opacity .2s,border-color .2s;flex-shrink:0;}
 .pd-thumb:hover{opacity:.9;}
 .pd-thumb.active{border-color:var(--gold);opacity:1;}
-
 .pd-info{position:relative;}
 .pd-label{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;}
 .pd-name{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:36px;color:var(--navy);letter-spacing:.02em;line-height:1.1;margin-bottom:10px;}
@@ -54,19 +41,67 @@
 .pd-detail-label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:10px;}
 .pd-detail-text{font-size:14px;color:#555;line-height:1.8;white-space:pre-line;}
 
+/* ── VARIANT SELECTOR ─────────────────────────────────────────────── */
+.vs-label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:10px;}
+.vs-grid{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:4px;}
+.vs-chip{
+    padding:8px 14px;
+    border:.5px solid rgba(11,42,74,.2);
+    border-radius:8px;
+    font-size:13px;
+    color:var(--navy);
+    background:white;
+    cursor:pointer;
+    font-family:'DM Sans',sans-serif;
+    transition:all .2s;
+    display:flex;
+    flex-direction:column;
+    align-items:flex-start;
+    gap:2px;
+    min-width:90px;
+}
+.vs-chip:hover:not(.vs-chip-out){
+    border-color:var(--gold);
+    background:var(--gold-soft);
+}
+.vs-chip.active{
+    border-color:var(--gold);
+    background:var(--gold-soft);
+    color:var(--navy);
+}
+.vs-chip-out{
+    opacity:.4;
+    cursor:not-allowed;
+    text-decoration:line-through;
+    background:#f5f5f5;
+}
+.vs-chip-size{font-size:12px;font-weight:500;line-height:1.3;}
+.vs-chip-price{font-size:11px;color:var(--gold);font-weight:500;}
+.vs-chip-stock{font-size:10px;color:rgba(11,42,74,.4);}
+.vs-chip-out .vs-chip-price{color:rgba(11,42,74,.3);}
+.vs-selected-info{
+    margin-top:6px;
+    font-size:12px;
+    color:rgba(11,42,74,.45);
+    min-height:18px;
+}
+/* ──────── */
+
 .pd-qty-label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:10px;}
 .pd-qty-wrap{display:inline-flex;align-items:center;border:.5px solid rgba(11,42,74,.2);border-radius:8px;overflow:hidden;}
 .pd-qty-btn{background:none;border:none;cursor:pointer;width:40px;height:40px;font-size:18px;color:var(--navy);display:flex;align-items:center;justify-content:center;transition:background .15s;flex-shrink:0;}
 .pd-qty-btn:hover{background:var(--navy-soft);}
 .pd-qty-btn:disabled{opacity:.3;cursor:not-allowed;}
 .pd-qty-input{width:48px;text-align:center;border:none;border-left:.5px solid rgba(11,42,74,.12);border-right:.5px solid rgba(11,42,74,.12);outline:none;font-size:14px;font-weight:500;color:var(--navy);height:40px;font-family:'DM Sans',sans-serif;background:white;}
-
 .pd-actions{display:flex;gap:10px;margin-top:24px;flex-wrap:wrap;align-items:center;}
 .pd-btn-primary{flex:1;min-width:120px;padding:13px 16px;background:var(--gold);color:#f0ebe0;border:none;border-radius:8px;cursor:pointer;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;font-family:'DM Sans',sans-serif;transition:all .2s;}
 .pd-btn-primary:hover{background:var(--navy);transform:translateY(-1px);box-shadow:0 6px 20px rgba(11,42,74,.2);}
 .pd-btn-secondary{flex:1;min-width:120px;padding:13px 16px;background:none;color:var(--navy);border:.5px solid var(--navy);border-radius:8px;cursor:pointer;font-size:11px;letter-spacing:.14em;text-transform:uppercase;font-weight:500;font-family:'DM Sans',sans-serif;transition:all .2s;}
 .pd-btn-secondary:hover{background:var(--navy-soft);}
-
+.stock-ok{font-size:12px;color:#27ae60;margin-top:6px;}
+.stock-low{font-size:12px;color:#e67e22;margin-top:6px;}
+.stock-out{font-size:12px;color:var(--danger);margin-top:6px;}
+.out-of-stock-box{background:var(--navy-soft);border:.5px solid rgba(11,42,74,.1);border-radius:8px;padding:13px 16px;font-size:12px;color:var(--navy-mid);text-align:center;width:100%;}
 .wishlist-form{position:absolute;top:10px;right:10px;}
 .wishlist-btn{width:42px;height:42px;border-radius:50%;border:.5px solid rgba(11,42,74,.15);background:white;display:flex;align-items:center;justify-content:center;cursor:pointer;transition:all .25s ease;backdrop-filter:blur(6px);}
 .wishlist-btn svg{width:18px;height:18px;stroke:var(--navy);fill:none;stroke-width:1.6;transition:all .25s ease;}
@@ -78,121 +113,49 @@
 @keyframes heartPop{0%{transform:scale(1)}30%{transform:scale(1.3)}60%{transform:scale(.9)}100%{transform:scale(1)}}
 .heart-burst{position:absolute;top:50%;left:50%;width:6px;height:6px;background:var(--gold);border-radius:50%;pointer-events:none;animation:burst .6s ease-out forwards;}
 @keyframes burst{0%{opacity:1;transform:translate(-50%,-50%) scale(1)}100%{opacity:0;transform:translate(-50%,-50%) scale(8)}}
-
-
-.stock-ok{font-size:12px;color:#27ae60;margin-top:6px;}
-.stock-low{font-size:12px;color:#e67e22;margin-top:6px;}
-.stock-out{font-size:12px;color:var(--danger);margin-top:6px;}
-.out-of-stock-box{background:var(--navy-soft);border:.5px solid rgba(11,42,74,.1);border-radius:8px;padding:13px 16px;font-size:12px;color:var(--navy-mid);text-align:center;width:100%;}
 .login-notice{background:#f8f6f2;border:.5px solid var(--gold-border);border-radius:10px;padding:16px 20px;margin-top:24px;font-size:13px;color:var(--navy-mid);display:flex;align-items:center;gap:12px;}
 .login-notice a{color:var(--navy);font-weight:500;}
-
 .pd-section{margin-top:72px;padding-top:48px;border-top:.5px solid var(--navy-soft);}
 .pd-section-label{font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:var(--gold);margin-bottom:6px;}
 .pd-section-title{font-family:'Cormorant Garamond',serif;font-weight:400;font-size:30px;color:var(--navy);margin-bottom:24px;}
-
-.slider-outer{
-    position:relative;
-}
-.slider-outer::after{
-    content:'';
-    position:absolute;
-    top:0;right:0;bottom:0;
-    width:60px;
-    background:linear-gradient(to right,transparent,var(--beige,#f5efe6));
-    pointer-events:none;
-    z-index:2;
-    border-radius:0 12px 12px 0;
-}
-
-.slider-track{
-    display:flex;
-    gap:16px;
-    overflow-x:auto;
-    scroll-snap-type:x mandatory;
-    -webkit-overflow-scrolling:touch;
-    padding-bottom:10px;
-    cursor:grab;
-    user-select:none;
-    scrollbar-width:none;
-    -ms-overflow-style:none;
-}
+.slider-outer{position:relative;}
+.slider-outer::after{content:'';position:absolute;top:0;right:0;bottom:0;width:60px;background:linear-gradient(to right,transparent,var(--beige,#f5efe6));pointer-events:none;z-index:2;border-radius:0 12px 12px 0;}
+.slider-track{display:flex;gap:16px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;padding-bottom:10px;cursor:grab;user-select:none;scrollbar-width:none;-ms-overflow-style:none;}
 .slider-track::-webkit-scrollbar{display:none;}
 .slider-track.is-dragging{cursor:grabbing;}
-
-.slider-card{
-    flex:0 0 180px;
-    scroll-snap-align:start;
-    border-radius:14px;
-    overflow:hidden;
-    border:.5px solid rgba(11,42,74,.1);
-    text-decoration:none;
-    color:inherit;
-    display:block;
-    transition:transform .25s,box-shadow .25s;
-    background:white;
-    min-width:180px;
-}
-.slider-card:hover{
-    transform:translateY(-5px);
-    box-shadow:0 12px 32px rgba(11,42,74,.1);
-}
-.slider-card-img{
-    width:100%;
-    aspect-ratio:1/1;
-    object-fit:cover;
-    display:block;
-    background:#f7f4ef;
-    transition:opacity .2s;
-}
+.slider-card{flex:0 0 180px;scroll-snap-align:start;border-radius:14px;overflow:hidden;border:.5px solid rgba(11,42,74,.1);text-decoration:none;color:inherit;display:block;transition:transform .25s,box-shadow .25s;background:white;min-width:180px;}
+.slider-card:hover{transform:translateY(-5px);box-shadow:0 12px 32px rgba(11,42,74,.1);}
+.slider-card-img{width:100%;aspect-ratio:1/1;object-fit:cover;display:block;background:#f7f4ef;transition:opacity .2s;}
 .slider-card:hover .slider-card-img{opacity:.9;}
 .slider-card-body{padding:10px 12px 14px;}
-.slider-card-name{
-    font-size:13px;
-    font-weight:500;
-    color:var(--navy);
-    margin-bottom:4px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-    line-height:1.4;
-}
-.slider-card-store{
-    font-size:10px;
-    color:var(--navy-mid);
-    margin-bottom:4px;
-    white-space:nowrap;
-    overflow:hidden;
-    text-overflow:ellipsis;
-}
+.slider-card-name{font-size:13px;font-weight:500;color:var(--navy);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.4;}
+.slider-card-store{font-size:10px;color:var(--navy-mid);margin-bottom:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
 .slider-price-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
 .slider-price-final{font-size:13px;color:var(--gold);font-weight:500;white-space:nowrap;}
 .slider-price-original{font-size:11px;color:rgba(11,42,74,.3);text-decoration:line-through;white-space:nowrap;}
-.slider-discount-badge{font-size:9px;background:rgba(192,57,43,.1);color:var(--danger);padding:1px 6px;border-radius:100px;font-weight:500;letter-spacing:.04em;}
-
-.slider-stock-out{
-    position:absolute;
-    top:8px;left:8px;
-    font-size:10px;
-    background:rgba(0,0,0,.55);
-    color:white;
-    padding:2px 8px;
-    border-radius:100px;
-    backdrop-filter:blur(4px);
-}
+.slider-stock-out{position:absolute;top:8px;left:8px;font-size:10px;background:rgba(0,0,0,.55);color:white;padding:2px 8px;border-radius:100px;backdrop-filter:blur(4px);}
 .slider-card-img-wrap{position:relative;}
+@media(max-width:640px){.slider-card{flex:0 0 150px;min-width:150px;}.pd-section-title{font-size:24px;}}
 
-.slider-empty{
-    padding:40px 0;
-    font-size:13px;
-    color:var(--navy-mid);
-    text-align:center;
-    width:100%;
+/* Ukuran tunggal badge */
+.size-badge{
+    display:inline-flex;align-items:center;gap:6px;
+    background:rgba(74,82,64,.07);border:.5px solid rgba(74,82,64,.15);
+    border-radius:6px;padding:5px 10px;font-size:12px;color:var(--olive);
+    margin-right:6px;margin-bottom:6px;
 }
+.size-badge svg{opacity:.5;}
 
-@media(max-width:640px){
-    .slider-card{flex:0 0 150px;min-width:150px;}
-    .pd-section-title{font-size:24px;}
+/* Pilih ukuran notice */
+.vs-notice{
+    background:rgba(201,169,110,.08);
+    border:.5px solid var(--gold-border);
+    border-radius:8px;
+    padding:10px 14px;
+    font-size:12px;
+    color:rgba(11,42,74,.6);
+    margin-bottom:16px;
+    display:flex;align-items:center;gap:8px;
 }
 </style>
 
@@ -203,14 +166,14 @@
         <div class="pd-flash"><div class="pd-flash-dot"></div>{{ session('success') }}</div>
     @endif
     @if(session('error'))
-        <div class="pd-flash" style="background:#fdf0f0;border-color:#f5c0c0;color:var(--danger,#c0392b);">
-            <div class="pd-flash-dot" style="background:var(--danger,#c0392b);"></div>{{ session('error') }}
+        <div class="pd-flash" style="background:#fdf0f0;border-color:#f5c0c0;color:var(--danger);">
+            <div class="pd-flash-dot" style="background:var(--danger);"></div>{{ session('error') }}
         </div>
     @endif
 
     <div class="pd-main">
 
-        {{-- Gambar --}}
+        {{-- ── GAMBAR ─────────────────────────────────────────────────── --}}
         <div class="pd-images">
             @php
                 $allImages = [];
@@ -223,7 +186,7 @@
                 @if($mainImg)
                     <img id="mainImage" src="{{ asset($mainImg) }}" class="pd-main-img" alt="{{ $product->name }}">
                 @else
-                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgba(11,42,74,.15);font-size:64px;background:#f7f4ef;">📦</div>
+                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgba(11,42,74,.15);font-size:64px;background:#f7f4ef;">🌿</div>
                 @endif
             </div>
             @if(count($allImages) > 1)
@@ -236,7 +199,7 @@
             @endif
         </div>
 
-        {{-- Info --}}
+        {{-- ── INFO ──────────────────────────────────────────────────── --}}
         <div class="pd-info">
             <p class="pd-label">Taku</p>
 
@@ -257,29 +220,70 @@
 
             <h1 class="pd-name">{{ $product->name }}</h1>
 
-            <div style="margin-bottom:28px;">
-                @if($product->hasDiscount())
-                    <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                        <p class="pd-price" style="color:var(--danger,#c0392b);">{{ $product->getFinalPriceFormatted() }}</p>
-                        <p style="font-size:16px;color:rgba(11,42,74,.35);text-decoration:line-through;">{{ $product->getPriceFormatted() }}</p>
-                        <span style="background:rgba(192,57,43,.1);color:var(--danger,#c0392b);font-size:10px;padding:3px 8px;border-radius:100px;font-weight:500;letter-spacing:.06em;">
-                            -{{ $product->discount_percent }}%
-                        </span>
-                    </div>
+            {{-- ── HARGA (berubah saat variant dipilih) ─────────────── --}}
+            <div style="margin-bottom:20px;" id="priceBlock">
+                @if($hasVariants)
+                    {{-- Tampilkan range harga dari semua variant --}}
+                    @php
+                        $minPrice = $product->variants->min('price');
+                        $maxPrice = $product->variants->max('price');
+                    @endphp
+                    <p class="pd-price" id="pdPrice">
+                        @if($minPrice === $maxPrice)
+                            Rp {{ number_format($minPrice, 0, ',', '.') }}
+                        @else
+                            Rp {{ number_format($minPrice, 0, ',', '.') }}
+                            <span style="font-size:14px;color:rgba(11,42,74,.3);font-weight:400;">
+                                — Rp {{ number_format($maxPrice, 0, ',', '.') }}
+                            </span>
+                        @endif
+                    </p>
+                    <p style="font-size:11px;color:rgba(11,42,74,.4);margin-top:4px;" id="pdPriceHint">Pilih ukuran untuk melihat harga spesifik</p>
                 @else
-                    <p class="pd-price">{{ $product->getPriceFormatted() }}</p>
+                    @if($product->hasDiscount())
+                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
+                            <p class="pd-price" id="pdPrice" style="color:var(--danger);">{{ $product->getFinalPriceFormatted() }}</p>
+                            <p style="font-size:16px;color:rgba(11,42,74,.35);text-decoration:line-through;">{{ $product->getPriceFormatted() }}</p>
+                            <span style="background:rgba(192,57,43,.1);color:var(--danger);font-size:10px;padding:3px 8px;border-radius:100px;font-weight:500;letter-spacing:.06em;">-{{ $product->discount_percent }}%</span>
+                        </div>
+                    @else
+                        <p class="pd-price" id="pdPrice">{{ $product->getPriceFormatted() }}</p>
+                    @endif
                 @endif
             </div>
 
-            @if($product->stock > 0)
-                @if($product->isLowStock())
-                    <p class="stock-low">⚠ Stok tersisa {{ $product->stock }}</p>
-                @else
-                    <p class="stock-ok">Stok tersedia ({{ $product->stock }})</p>
+            {{-- ── UKURAN TUNGGAL (jika tidak ada variant) ──────────── --}}
+            @if(!$hasVariants && ($product->getHeightLabel() || $product->getDiameterLabel()))
+            <div style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:4px;">
+                @if($product->getHeightLabel())
+                <span class="size-badge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="17 7 12 2 7 7"/><polyline points="7 17 12 22 17 17"/></svg>
+                    Tinggi {{ $product->getHeightLabel() }}
+                </span>
                 @endif
-            @elseif($product->stock === 0)
-                <p class="stock-out">Stok habis</p>
+                @if($product->getDiameterLabel())
+                <span class="size-badge">
+                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/></svg>
+                    Ø {{ $product->getDiameterLabel() }}
+                </span>
+                @endif
+            </div>
             @endif
+
+            {{-- ── STOK (berubah saat variant dipilih) ─────────────── --}}
+            <div id="stockBlock">
+                @if(!$hasVariants)
+                    @if($product->stock > 0)
+                        @if($product->isLowStock())
+                            <p class="stock-low">⚠ Stok tersisa {{ $product->stock }}</p>
+                        @else
+                            <p class="stock-ok">Stok tersedia ({{ $product->stock }})</p>
+                        @endif
+                    @else
+                        <p class="stock-out">Stok habis</p>
+                    @endif
+                @endif
+            </div>
 
             @if($product->getDesc($locale))
             <div class="pd-divider"></div>
@@ -296,14 +300,49 @@
             <div class="pd-divider"></div>
 
             @auth
-            @php $outOfStock = $product->stock === 0; @endphp
+            @php
+                $outOfStock = !$hasVariants && $product->stock === 0;
+            @endphp
+
+            {{-- ── VARIANT SELECTOR ──────────────────────────────────── --}}
+            @if($hasVariants)
+            <div style="margin-bottom:20px;">
+                <p class="vs-label">Pilih Ukuran</p>
+                <div class="vs-grid" id="variantGrid">
+                    @foreach($product->variants as $v)
+                    @php
+                        $vLabel = $v->getLabel();
+                        $vOut   = $v->stock === 0;
+                    @endphp
+                    <button type="button"
+                            class="vs-chip {{ $vOut ? 'vs-chip-out' : '' }}"
+                            data-variant-id="{{ $v->id }}"
+                            data-price="{{ $v->price }}"
+                            data-stock="{{ $v->stock }}"
+                            data-label="{{ $vLabel }}"
+                            {{ $vOut ? 'disabled' : '' }}
+                            onclick="selectVariant(this)">
+                        <span class="vs-chip-size">{{ $vLabel }}</span>
+                        <span class="vs-chip-price">Rp {{ number_format($v->price, 0, ',', '.') }}</span>
+                        @if($vOut)
+                            <span class="vs-chip-stock">Habis</span>
+                        @elseif($v->stock <= 5)
+                            <span class="vs-chip-stock">Sisa {{ $v->stock }}</span>
+                        @endif
+                    </button>
+                    @endforeach
+                </div>
+                <p class="vs-selected-info" id="vsSelectedInfo">— Belum ada ukuran dipilih</p>
+            </div>
+            @endif
+            {{-- ─────────────────────────────────────────────────────── --}}
 
             @if(!$outOfStock)
             <p class="pd-qty-label">{{ __('app.quantity') }}</p>
             <div class="pd-qty-wrap">
                 <button class="pd-qty-btn" type="button" onclick="decrease()" id="btnMinus">−</button>
                 <input type="text" id="qty" value="1" class="pd-qty-input"
-                       data-max="{{ $product->stock > 0 ? $product->stock : 999 }}" readonly>
+                       data-max="{{ !$hasVariants && $product->stock > 0 ? $product->stock : 999 }}" readonly>
                 <button class="pd-qty-btn" type="button" onclick="increase()">+</button>
             </div>
             @endif
@@ -311,11 +350,25 @@
             <form id="cartForm" action="{{ route('cart.add') }}" method="POST">
                 @csrf
                 <input type="hidden" name="product_id" value="{{ $product->id }}">
+                <input type="hidden" name="variant_id" id="formVariantId" value="">
                 <input type="hidden" name="qty" id="formQty" value="1">
                 <input type="hidden" name="action" id="formAction" value="add_to_cart">
-                <div class="pd-actions">
+
+                <div class="pd-actions" id="actionArea">
                     @if($outOfStock)
                         <div class="out-of-stock-box">Stok habis — tidak bisa dipesan</div>
+                    @elseif($hasVariants)
+                        {{-- Tombol aktif hanya setelah variant dipilih --}}
+                        <button type="button" class="pd-btn-primary" id="btnBuyNow"
+                                onclick="submitCart('buy_now')" disabled
+                                style="opacity:.4;cursor:not-allowed;">
+                            {{ __('app.buy_now') }}
+                        </button>
+                        <button type="button" class="pd-btn-secondary" id="btnAddCart"
+                                onclick="submitCart('add_to_cart')" disabled
+                                style="opacity:.4;cursor:not-allowed;">
+                            {{ __('app.add_to_cart') }}
+                        </button>
                     @else
                         <button type="button" class="pd-btn-primary" onclick="submitCart('buy_now')">
                             {{ __('app.buy_now') }}
@@ -328,9 +381,7 @@
             </form>
 
             <form action="{{ route('wishlist.toggle', $product) }}"
-                  method="POST"
-                  class="wishlist-form js-wishlist-form"
-                  data-id="{{ $product->id }}">
+                  method="POST" class="wishlist-form js-wishlist-form" data-id="{{ $product->id }}">
                 @csrf
                 <button type="submit" class="wishlist-btn js-wishlist-btn {{ $isWishlisted ? 'active' : '' }}">
                     <svg viewBox="0 0 24 24">
@@ -340,6 +391,7 @@
             </form>
 
             @else
+            {{-- Belum login --}}
             <div class="login-notice">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 {{ $locale==='en'?'Please':'Silakan' }}
@@ -350,24 +402,18 @@
         </div>
     </div>
 
-
+    {{-- ── PRODUK LAIN DARI TOKO ────────────────────────────────────────── --}}
     @if(isset($storeProducts) && $storeProducts->count() > 0)
     <div class="pd-section">
         <p class="pd-section-label">Taku</p>
         <h2 class="pd-section-title">
-            @if($product->store)
-                Lainnya dari {{ $product->store->name }}
-            @else
-                Lainnya dari Taku Official
-            @endif
+            @if($product->store) Lainnya dari {{ $product->store->name }}
+            @else Lainnya dari Taku Official @endif
         </h2>
         <div class="slider-outer">
             <div class="slider-track" id="sliderStore">
                 @foreach($storeProducts as $item)
-                @php
-                    $itemImg   = $item->image ?? ($item->images->first()->image ?? null);
-                    $stockOut  = $item->stock === 0;
-                @endphp
+                @php $itemImg = $item->image ?? ($item->images->first()->image ?? null); $stockOut = $item->stock === 0; @endphp
                 <a href="{{ route('product.show', $item->id) }}" class="slider-card">
                     <div class="slider-card-img-wrap">
                         @if($itemImg)
@@ -375,19 +421,19 @@
                                  style="{{ $stockOut ? 'opacity:.5;filter:grayscale(.4);' : '' }}"
                                  onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
                         @else
-                            <div class="slider-card-img" style="display:flex;align-items:center;justify-content:center;color:rgba(11,42,74,.15);font-size:36px;">📦</div>
+                            <div class="slider-card-img" style="display:flex;align-items:center;justify-content:center;color:rgba(11,42,74,.15);font-size:36px;">🌿</div>
                         @endif
-                        @if($stockOut)
-                            <span class="slider-stock-out">Habis</span>
-                        @elseif($item->hasDiscount())
-                            <span style="position:absolute;top:8px;left:8px;font-size:9px;background:rgba(192,57,43,.9);color:white;padding:2px 7px;border-radius:100px;font-weight:500;">-{{ $item->discount_percent }}%</span>
+                        @if($stockOut) <span class="slider-stock-out">Habis</span>
+                        @elseif($item->hasDiscount()) <span style="position:absolute;top:8px;left:8px;font-size:9px;background:rgba(192,57,43,.9);color:white;padding:2px 7px;border-radius:100px;font-weight:500;">-{{ $item->discount_percent }}%</span>
                         @endif
                     </div>
                     <div class="slider-card-body">
                         <p class="slider-card-name">{{ $item->name }}</p>
                         <div class="slider-price-row">
-                            @if($item->hasDiscount())
-                                <span class="slider-price-final" style="color:var(--danger,#c0392b);">{{ $item->getFinalPriceFormatted() }}</span>
+                            @if($item->hasVariants())
+                                <span class="slider-price-final" style="font-size:11px;">Mulai Rp {{ number_format($item->getMinVariantPrice(), 0, ',', '.') }}</span>
+                            @elseif($item->hasDiscount())
+                                <span class="slider-price-final" style="color:var(--danger);">{{ $item->getFinalPriceFormatted() }}</span>
                                 <span class="slider-price-original">{{ $item->getPriceFormatted() }}</span>
                             @else
                                 <span class="slider-price-final">{{ $item->getFinalPriceFormatted() }}</span>
@@ -401,7 +447,7 @@
     </div>
     @endif
 
-
+    {{-- ── PRODUK LAIN ──────────────────────────────────────────────────── --}}
     @if(isset($products) && $products->count() > 0)
     <div class="pd-section">
         <p class="pd-section-label">Taku</p>
@@ -409,10 +455,7 @@
         <div class="slider-outer">
             <div class="slider-track" id="sliderOthers">
                 @foreach($products as $item)
-                @php
-                    $itemImg  = $item->image ?? ($item->images->first()->image ?? null);
-                    $stockOut = $item->stock === 0;
-                @endphp
+                @php $itemImg = $item->image ?? ($item->images->first()->image ?? null); $stockOut = $item->stock === 0; @endphp
                 <a href="{{ route('product.show', $item->id) }}" class="slider-card">
                     <div class="slider-card-img-wrap">
                         @if($itemImg)
@@ -420,12 +463,10 @@
                                  style="{{ $stockOut ? 'opacity:.5;filter:grayscale(.4);' : '' }}"
                                  onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
                         @else
-                            <div class="slider-card-img" style="display:flex;align-items:center;justify-content:center;color:rgba(11,42,74,.15);font-size:36px;">📦</div>
+                            <div class="slider-card-img" style="display:flex;align-items:center;justify-content:center;color:rgba(11,42,74,.15);font-size:36px;">🌿</div>
                         @endif
-                        @if($stockOut)
-                            <span class="slider-stock-out">Habis</span>
-                        @elseif($item->hasDiscount())
-                            <span style="position:absolute;top:8px;left:8px;font-size:9px;background:rgba(192,57,43,.9);color:white;padding:2px 7px;border-radius:100px;font-weight:500;">-{{ $item->discount_percent }}%</span>
+                        @if($stockOut) <span class="slider-stock-out">Habis</span>
+                        @elseif($item->hasDiscount()) <span style="position:absolute;top:8px;left:8px;font-size:9px;background:rgba(192,57,43,.9);color:white;padding:2px 7px;border-radius:100px;font-weight:500;">-{{ $item->discount_percent }}%</span>
                         @endif
                     </div>
                     <div class="slider-card-body">
@@ -437,8 +478,10 @@
                         </p>
                         @endif
                         <div class="slider-price-row">
-                            @if($item->hasDiscount())
-                                <span class="slider-price-final" style="color:var(--danger,#c0392b);">{{ $item->getFinalPriceFormatted() }}</span>
+                            @if($item->hasVariants())
+                                <span class="slider-price-final" style="font-size:11px;">Mulai Rp {{ number_format($item->getMinVariantPrice(), 0, ',', '.') }}</span>
+                            @elseif($item->hasDiscount())
+                                <span class="slider-price-final" style="color:var(--danger);">{{ $item->getFinalPriceFormatted() }}</span>
                                 <span class="slider-price-original">{{ $item->getPriceFormatted() }}</span>
                             @else
                                 <span class="slider-price-final">{{ $item->getFinalPriceFormatted() }}</span>
@@ -451,7 +494,6 @@
         </div>
     </div>
     @endif
-
 </div>
 
 {{-- WhatsApp --}}
@@ -462,6 +504,7 @@
 </a>
 
 <script>
+// ── Image gallery 
 function changeImage(src, el) {
     const img = document.getElementById('mainImage');
     if(img){ img.style.opacity='.5'; img.src=src; img.onload=()=>{ img.style.opacity='1'; }; }
@@ -469,22 +512,98 @@ function changeImage(src, el) {
     el.classList.add('active');
 }
 
+// ── Qty controls
 function increase(){
     const q=document.getElementById('qty');
+    if(!q) return;
     const max=parseInt(q.dataset.max)||999;
     if(parseInt(q.value)<max) q.value=parseInt(q.value)+1;
     document.getElementById('btnMinus').disabled=false;
 }
 function decrease(){
     const q=document.getElementById('qty');
+    if(!q) return;
     if(parseInt(q.value)>1) q.value=parseInt(q.value)-1;
 }
+
+// ── Cart submit ─
 function submitCart(action){
+    @if($hasVariants)
+    if(!document.getElementById('formVariantId').value){
+        showToast('Pilih ukuran terlebih dahulu 🌿');
+        document.getElementById('variantGrid')?.scrollIntoView({behavior:'smooth',block:'nearest'});
+        return;
+    }
+    @endif
     document.getElementById('formQty').value=document.getElementById('qty')?.value||1;
     document.getElementById('formAction').value=action;
     document.getElementById('cartForm').submit();
 }
 
+// ── Variant selector ───────────────────────────────────────────────────────
+function selectVariant(btn) {
+    // Toggle active
+    document.querySelectorAll('.vs-chip').forEach(c=>c.classList.remove('active'));
+    btn.classList.add('active');
+
+    const variantId = btn.dataset.variantId;
+    const price     = parseInt(btn.dataset.price);
+    const stock     = parseInt(btn.dataset.stock);
+    const label     = btn.dataset.label;
+
+    // Update hidden input
+    document.getElementById('formVariantId').value = variantId;
+
+    // Update harga
+    const priceEl = document.getElementById('pdPrice');
+    if(priceEl){
+        priceEl.textContent = 'Rp ' + price.toLocaleString('id-ID');
+        priceEl.style.color = 'var(--gold)';
+    }
+    const hintEl = document.getElementById('pdPriceHint');
+    if(hintEl) hintEl.style.display = 'none';
+
+    // Update stok
+    const stockBlock = document.getElementById('stockBlock');
+    if(stockBlock){
+        if(stock === 0){
+            stockBlock.innerHTML = '<p class="stock-out">Stok habis</p>';
+        } else if(stock <= 5){
+            stockBlock.innerHTML = '<p class="stock-low">⚠ Stok tersisa ' + stock + '</p>';
+        } else {
+            stockBlock.innerHTML = '<p class="stock-ok">Stok tersedia (' + stock + ')</p>';
+        }
+    }
+
+    // Update qty max
+    const qtyEl = document.getElementById('qty');
+    if(qtyEl){
+        qtyEl.dataset.max = stock > 0 ? stock : 999;
+        if(parseInt(qtyEl.value) > stock && stock > 0) qtyEl.value = stock;
+    }
+
+    // Update info text
+    const infoEl = document.getElementById('vsSelectedInfo');
+    if(infoEl) infoEl.textContent = '✓ ' + label + ' dipilih';
+
+    // Aktifkan tombol beli
+    const btnBuyNow  = document.getElementById('btnBuyNow');
+    const btnAddCart = document.getElementById('btnAddCart');
+    const enabled    = stock > 0;
+
+    if(btnBuyNow){
+        btnBuyNow.disabled = !enabled;
+        btnBuyNow.style.opacity = enabled ? '1' : '.4';
+        btnBuyNow.style.cursor  = enabled ? 'pointer' : 'not-allowed';
+    }
+    if(btnAddCart){
+        btnAddCart.disabled = !enabled;
+        btnAddCart.style.opacity = enabled ? '1' : '.4';
+        btnAddCart.style.cursor  = enabled ? 'pointer' : 'not-allowed';
+    }
+}
+
+// ── Toast ───────
 function showToast(text){
     const t=document.getElementById('toast');
     t.innerText=text;
@@ -493,6 +612,7 @@ function showToast(text){
     setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; },2200);
 }
 
+// ── Wishlist ────
 document.querySelectorAll('.js-wishlist-form').forEach(form=>{
     form.addEventListener('submit', async function(e){
         e.preventDefault();
@@ -512,7 +632,6 @@ document.querySelectorAll('.js-wishlist-form').forEach(form=>{
         }catch(err){ console.error(err); }
     });
 });
-
 function createBurst(el){
     const b=document.createElement('span');
     b.classList.add('heart-burst');
@@ -520,41 +639,19 @@ function createBurst(el){
     setTimeout(()=>b.remove(),600);
 }
 
-
+// ── Drag scroll ─
 function initDragScroll(el){
     if(!el) return;
-
-    let isDown=false, startX=0, scrollLeft=0, moved=false;
-
-    el.addEventListener('mousedown', e=>{
-        isDown=true; moved=false;
-        startX=e.pageX - el.offsetLeft;
-        scrollLeft=el.scrollLeft;
-        el.classList.add('is-dragging');
-    });
-
-    el.addEventListener('mouseleave',()=>{ isDown=false; el.classList.remove('is-dragging'); });
-    el.addEventListener('mouseup',   ()=>{ isDown=false; el.classList.remove('is-dragging'); });
-
-    el.addEventListener('mousemove', e=>{
-        if(!isDown) return;
-        e.preventDefault();
-        const x=e.pageX - el.offsetLeft;
-        const walk=(x - startX) * 1.4;
-        if(Math.abs(walk) > 4) moved=true;
-        el.scrollLeft=scrollLeft - walk;
-    });
-
-    // Prevent link click after drag
-    el.addEventListener('click', e=>{
-        if(moved){ e.preventDefault(); e.stopPropagation(); }
-    }, true);
+    let isDown=false,startX=0,scrollLeft=0,moved=false;
+    el.addEventListener('mousedown',e=>{isDown=true;moved=false;startX=e.pageX-el.offsetLeft;scrollLeft=el.scrollLeft;el.classList.add('is-dragging');});
+    el.addEventListener('mouseleave',()=>{isDown=false;el.classList.remove('is-dragging');});
+    el.addEventListener('mouseup',()=>{isDown=false;el.classList.remove('is-dragging');});
+    el.addEventListener('mousemove',e=>{if(!isDown)return;e.preventDefault();const x=e.pageX-el.offsetLeft;const walk=(x-startX)*1.4;if(Math.abs(walk)>4)moved=true;el.scrollLeft=scrollLeft-walk;});
+    el.addEventListener('click',e=>{if(moved){e.preventDefault();e.stopPropagation();}},true);
 }
-
 document.addEventListener('DOMContentLoaded',()=>{
     initDragScroll(document.getElementById('sliderStore'));
     initDragScroll(document.getElementById('sliderOthers'));
 });
 </script>
-
 @endsection
