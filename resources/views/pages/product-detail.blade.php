@@ -47,46 +47,46 @@
 .vs-chip{
     padding:8px 14px;
     border:.5px solid rgba(11,42,74,.2);
-    border-radius:8px;
-    font-size:13px;
-    color:var(--navy);
-    background:white;
-    cursor:pointer;
-    font-family:'DM Sans',sans-serif;
-    transition:all .2s;
-    display:flex;
-    flex-direction:column;
-    align-items:flex-start;
-    gap:2px;
-    min-width:90px;
+    border-radius:8px;font-size:13px;color:var(--navy);background:white;cursor:pointer;
+    font-family:'DM Sans',sans-serif;transition:all .2s;
+    display:flex;flex-direction:column;align-items:flex-start;gap:2px;min-width:90px;
+    position:relative;
 }
-.vs-chip:hover:not(.vs-chip-out){
-    border-color:var(--gold);
-    background:var(--gold-soft);
-}
-.vs-chip.active{
-    border-color:var(--gold);
-    background:var(--gold-soft);
-    color:var(--navy);
-}
-.vs-chip-out{
-    opacity:.4;
-    cursor:not-allowed;
-    text-decoration:line-through;
-    background:#f5f5f5;
-}
+.vs-chip:hover:not(.vs-chip-out){border-color:var(--gold);background:var(--gold-soft);}
+.vs-chip.active{border-color:var(--gold);background:var(--gold-soft);color:var(--navy);}
+.vs-chip-out{opacity:.4;cursor:not-allowed;background:#f5f5f5;}
 .vs-chip-size{font-size:12px;font-weight:500;line-height:1.3;}
-.vs-chip-price{font-size:11px;color:var(--gold);font-weight:500;}
+
+/* Harga chip — final price */
+.vs-chip-price{font-size:11px;color:var(--danger);font-weight:500;}
+.vs-chip-price.no-disc{color:var(--gold);}
+
+/* Harga coret di chip */
+.vs-chip-original{font-size:10px;color:rgba(11,42,74,.3);text-decoration:line-through;}
+
+/* Badge diskon di pojok chip */
+.vs-chip-disc-badge{
+    position:absolute;top:-7px;right:-7px;
+    background:var(--danger);color:white;
+    font-size:9px;font-weight:600;padding:1px 5px;border-radius:100px;
+    letter-spacing:.04em;
+}
+
 .vs-chip-stock{font-size:10px;color:rgba(11,42,74,.4);}
 .vs-chip-out .vs-chip-price{color:rgba(11,42,74,.3);}
-.vs-selected-info{
-    margin-top:6px;
-    font-size:12px;
-    color:rgba(11,42,74,.45);
-    min-height:18px;
-}
-/* ──────── */
+.vs-selected-info{margin-top:6px;font-size:12px;color:rgba(11,42,74,.45);min-height:18px;}
 
+/* ── HARGA BLOCK ─────────────────────────────────────────────────── */
+.price-row{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.price-final-tag{font-size:22px;font-weight:500;color:var(--danger);}
+.price-original-tag{font-size:16px;color:rgba(11,42,74,.35);text-decoration:line-through;}
+.price-disc-badge{background:rgba(192,57,43,.1);color:var(--danger);font-size:10px;padding:3px 8px;border-radius:100px;font-weight:500;letter-spacing:.06em;}
+
+/* ── SIZE BADGE (tunggal) ─────────────────────────────────────────── */
+.size-badge{display:inline-flex;align-items:center;gap:6px;background:rgba(74,82,64,.07);border:.5px solid rgba(74,82,64,.15);border-radius:6px;padding:5px 10px;font-size:12px;color:var(--olive);margin-right:6px;margin-bottom:6px;}
+.size-badge svg{opacity:.5;}
+
+/* ── REST ────────────────────────────────────────────────────────── */
 .pd-qty-label{font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--navy-mid);margin-bottom:10px;}
 .pd-qty-wrap{display:inline-flex;align-items:center;border:.5px solid rgba(11,42,74,.2);border-radius:8px;overflow:hidden;}
 .pd-qty-btn{background:none;border:none;cursor:pointer;width:40px;height:40px;font-size:18px;color:var(--navy);display:flex;align-items:center;justify-content:center;transition:background .15s;flex-shrink:0;}
@@ -136,30 +136,28 @@
 .slider-stock-out{position:absolute;top:8px;left:8px;font-size:10px;background:rgba(0,0,0,.55);color:white;padding:2px 8px;border-radius:100px;backdrop-filter:blur(4px);}
 .slider-card-img-wrap{position:relative;}
 @media(max-width:640px){.slider-card{flex:0 0 150px;min-width:150px;}.pd-section-title{font-size:24px;}}
-
-/* Ukuran tunggal badge */
-.size-badge{
-    display:inline-flex;align-items:center;gap:6px;
-    background:rgba(74,82,64,.07);border:.5px solid rgba(74,82,64,.15);
-    border-radius:6px;padding:5px 10px;font-size:12px;color:var(--olive);
-    margin-right:6px;margin-bottom:6px;
-}
-.size-badge svg{opacity:.5;}
-
-/* Pilih ukuran notice */
-.vs-notice{
-    background:rgba(201,169,110,.08);
-    border:.5px solid var(--gold-border);
-    border-radius:8px;
-    padding:10px 14px;
-    font-size:12px;
-    color:rgba(11,42,74,.6);
-    margin-bottom:16px;
-    display:flex;align-items:center;gap:8px;
-}
 </style>
 
 <div id="toast" style="position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(20px);background:var(--navy,#0b2a4a);color:white;padding:12px 20px;border-radius:999px;font-size:12px;opacity:0;pointer-events:none;transition:all .4s ease;z-index:9999;font-family:'DM Sans',sans-serif;"></div>
+
+{{-- Pass variant data ke JS --}}
+@if($hasVariants)
+<script>
+const VARIANTS_DATA = {
+    @foreach($product->variants as $v)
+    "{{ $v->id }}": {
+        id:               {{ $v->id }},
+        label:            "{{ addslashes($v->getLabel()) }}",
+        price:            {{ $v->price }},
+        finalPrice:       {{ $v->getFinalPrice() }},
+        discountPercent:  {{ $v->discount_percent ?? 0 }},
+        hasDiscount:      {{ $v->hasDiscount() ? 'true' : 'false' }},
+        stock:            {{ $v->stock }},
+    },
+    @endforeach
+};
+</script>
+@endif
 
 <div class="pd-wrap">
     @if(session('success'))
@@ -220,31 +218,33 @@
 
             <h1 class="pd-name">{{ $product->name }}</h1>
 
-            {{-- ── HARGA (berubah saat variant dipilih) ─────────────── --}}
+            {{-- ── HARGA (diupdate JS saat variant dipilih) ─────────── --}}
             <div style="margin-bottom:20px;" id="priceBlock">
                 @if($hasVariants)
-                    {{-- Tampilkan range harga dari semua variant --}}
                     @php
-                        $minPrice = $product->variants->min('price');
-                        $maxPrice = $product->variants->max('price');
+                        $minFinal = $product->variants->min(fn($v) => $v->getFinalPrice());
+                        $maxFinal = $product->variants->max(fn($v) => $v->getFinalPrice());
+                        $anyDisc  = $product->variants->contains(fn($v) => $v->hasDiscount());
                     @endphp
-                    <p class="pd-price" id="pdPrice">
-                        @if($minPrice === $maxPrice)
-                            Rp {{ number_format($minPrice, 0, ',', '.') }}
+                    <p class="pd-price" id="pdPrice" style="{{ $anyDisc ? 'color:var(--danger);' : '' }}">
+                        @if($minFinal === $maxFinal)
+                            Rp {{ number_format($minFinal, 0, ',', '.') }}
                         @else
-                            Rp {{ number_format($minPrice, 0, ',', '.') }}
+                            Rp {{ number_format($minFinal, 0, ',', '.') }}
                             <span style="font-size:14px;color:rgba(11,42,74,.3);font-weight:400;">
-                                — Rp {{ number_format($maxPrice, 0, ',', '.') }}
+                                — Rp {{ number_format($maxFinal, 0, ',', '.') }}
                             </span>
                         @endif
                     </p>
                     <p style="font-size:11px;color:rgba(11,42,74,.4);margin-top:4px;" id="pdPriceHint">Pilih ukuran untuk melihat harga spesifik</p>
+                    <p style="display:none;font-size:13px;color:rgba(11,42,74,.3);text-decoration:line-through;margin-top:2px;" id="pdPriceOriginal"></p>
+                    <span style="display:none;" id="pdDiscBadge" class="price-disc-badge"></span>
                 @else
                     @if($product->hasDiscount())
-                        <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;">
-                            <p class="pd-price" id="pdPrice" style="color:var(--danger);">{{ $product->getFinalPriceFormatted() }}</p>
-                            <p style="font-size:16px;color:rgba(11,42,74,.35);text-decoration:line-through;">{{ $product->getPriceFormatted() }}</p>
-                            <span style="background:rgba(192,57,43,.1);color:var(--danger);font-size:10px;padding:3px 8px;border-radius:100px;font-weight:500;letter-spacing:.06em;">-{{ $product->discount_percent }}%</span>
+                        <div class="price-row">
+                            <p class="price-final-tag" id="pdPrice">{{ $product->getFinalPriceFormatted() }}</p>
+                            <p class="price-original-tag">{{ $product->getPriceFormatted() }}</p>
+                            <span class="price-disc-badge">-{{ $product->discount_percent }}%</span>
                         </div>
                     @else
                         <p class="pd-price" id="pdPrice">{{ $product->getPriceFormatted() }}</p>
@@ -252,7 +252,7 @@
                 @endif
             </div>
 
-            {{-- ── UKURAN TUNGGAL (jika tidak ada variant) ──────────── --}}
+            {{-- ── UKURAN TUNGGAL (hanya tampil kalau tidak ada variant) ── --}}
             @if(!$hasVariants && ($product->getHeightLabel() || $product->getDiameterLabel()))
             <div style="margin-bottom:16px;display:flex;flex-wrap:wrap;gap:4px;">
                 @if($product->getHeightLabel())
@@ -270,7 +270,7 @@
             </div>
             @endif
 
-            {{-- ── STOK (berubah saat variant dipilih) ─────────────── --}}
+            {{-- ── STOK (diupdate JS) ───────────────────────────────── --}}
             <div id="stockBlock">
                 @if(!$hasVariants)
                     @if($product->stock > 0)
@@ -300,9 +300,7 @@
             <div class="pd-divider"></div>
 
             @auth
-            @php
-                $outOfStock = !$hasVariants && $product->stock === 0;
-            @endphp
+            @php $outOfStock = !$hasVariants && $product->stock === 0; @endphp
 
             {{-- ── VARIANT SELECTOR ──────────────────────────────────── --}}
             @if($hasVariants)
@@ -311,19 +309,30 @@
                 <div class="vs-grid" id="variantGrid">
                     @foreach($product->variants as $v)
                     @php
-                        $vLabel = $v->getLabel();
-                        $vOut   = $v->stock === 0;
+                        $vOut       = $v->stock === 0;
+                        $vFinal     = $v->getFinalPrice();
+                        $vHasDisc   = $v->hasDiscount();
                     @endphp
                     <button type="button"
                             class="vs-chip {{ $vOut ? 'vs-chip-out' : '' }}"
                             data-variant-id="{{ $v->id }}"
-                            data-price="{{ $v->price }}"
-                            data-stock="{{ $v->stock }}"
-                            data-label="{{ $vLabel }}"
                             {{ $vOut ? 'disabled' : '' }}
                             onclick="selectVariant(this)">
-                        <span class="vs-chip-size">{{ $vLabel }}</span>
-                        <span class="vs-chip-price">Rp {{ number_format($v->price, 0, ',', '.') }}</span>
+
+                        @if($vHasDisc)
+                            <span class="vs-chip-disc-badge">-{{ $v->discount_percent }}%</span>
+                        @endif
+
+                        <span class="vs-chip-size">{{ $v->getLabel() }}</span>
+
+                        <span class="vs-chip-price {{ !$vHasDisc ? 'no-disc' : '' }}">
+                            Rp {{ number_format($vFinal, 0, ',', '.') }}
+                        </span>
+
+                        @if($vHasDisc)
+                            <span class="vs-chip-original">Rp {{ number_format($v->price, 0, ',', '.') }}</span>
+                        @endif
+
                         @if($vOut)
                             <span class="vs-chip-stock">Habis</span>
                         @elseif($v->stock <= 5)
@@ -335,7 +344,6 @@
                 <p class="vs-selected-info" id="vsSelectedInfo">— Belum ada ukuran dipilih</p>
             </div>
             @endif
-            {{-- ─────────────────────────────────────────────────────── --}}
 
             @if(!$outOfStock)
             <p class="pd-qty-label">{{ __('app.quantity') }}</p>
@@ -358,15 +366,12 @@
                     @if($outOfStock)
                         <div class="out-of-stock-box">Stok habis — tidak bisa dipesan</div>
                     @elseif($hasVariants)
-                        {{-- Tombol aktif hanya setelah variant dipilih --}}
                         <button type="button" class="pd-btn-primary" id="btnBuyNow"
-                                onclick="submitCart('buy_now')" disabled
-                                style="opacity:.4;cursor:not-allowed;">
+                                onclick="submitCart('buy_now')" disabled style="opacity:.4;cursor:not-allowed;">
                             {{ __('app.buy_now') }}
                         </button>
                         <button type="button" class="pd-btn-secondary" id="btnAddCart"
-                                onclick="submitCart('add_to_cart')" disabled
-                                style="opacity:.4;cursor:not-allowed;">
+                                onclick="submitCart('add_to_cart')" disabled style="opacity:.4;cursor:not-allowed;">
                             {{ __('app.add_to_cart') }}
                         </button>
                     @else
@@ -384,14 +389,11 @@
                   method="POST" class="wishlist-form js-wishlist-form" data-id="{{ $product->id }}">
                 @csrf
                 <button type="submit" class="wishlist-btn js-wishlist-btn {{ $isWishlisted ? 'active' : '' }}">
-                    <svg viewBox="0 0 24 24">
-                        <path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/>
-                    </svg>
+                    <svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg>
                 </button>
             </form>
 
             @else
-            {{-- Belum login --}}
             <div class="login-notice">
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="flex-shrink:0;"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                 {{ $locale==='en'?'Please':'Silakan' }}
@@ -402,7 +404,7 @@
         </div>
     </div>
 
-    {{-- ── PRODUK LAIN DARI TOKO ────────────────────────────────────────── --}}
+    {{-- Slider: produk lain dari toko --}}
     @if(isset($storeProducts) && $storeProducts->count() > 0)
     <div class="pd-section">
         <p class="pd-section-label">Taku</p>
@@ -447,7 +449,7 @@
     </div>
     @endif
 
-    {{-- ── PRODUK LAIN ──────────────────────────────────────────────────── --}}
+    {{-- Slider: produk lain --}}
     @if(isset($products) && $products->count() > 0)
     <div class="pd-section">
         <p class="pd-section-label">Taku</p>
@@ -496,7 +498,6 @@
     @endif
 </div>
 
-{{-- WhatsApp --}}
 <a href="https://wa.link/qf1hte" target="_blank"
    style="position:fixed;bottom:24px;right:24px;background:#25d366;color:white;width:52px;height:52px;border-radius:50%;text-decoration:none;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 16px rgba(0,0,0,.15);transition:transform .2s;z-index:100;"
    onmouseover="this.style.transform='scale(1.1)'" onmouseout="this.style.transform='scale(1)'">
@@ -504,29 +505,22 @@
 </a>
 
 <script>
-// ── Image gallery 
 function changeImage(src, el) {
     const img = document.getElementById('mainImage');
     if(img){ img.style.opacity='.5'; img.src=src; img.onload=()=>{ img.style.opacity='1'; }; }
     document.querySelectorAll('.pd-thumb').forEach(t=>t.classList.remove('active'));
     el.classList.add('active');
 }
-
-// ── Qty controls
 function increase(){
-    const q=document.getElementById('qty');
-    if(!q) return;
+    const q=document.getElementById('qty'); if(!q) return;
     const max=parseInt(q.dataset.max)||999;
     if(parseInt(q.value)<max) q.value=parseInt(q.value)+1;
     document.getElementById('btnMinus').disabled=false;
 }
 function decrease(){
-    const q=document.getElementById('qty');
-    if(!q) return;
+    const q=document.getElementById('qty'); if(!q) return;
     if(parseInt(q.value)>1) q.value=parseInt(q.value)-1;
 }
-
-// ── Cart submit ─
 function submitCart(action){
     @if($hasVariants)
     if(!document.getElementById('formVariantId').value){
@@ -540,91 +534,86 @@ function submitCart(action){
     document.getElementById('cartForm').submit();
 }
 
-// ── Variant selector ───────────────────────────────────────────────────────
+// ── Variant selector — update harga + stok + tampilan coret ───────────
 function selectVariant(btn) {
-    // Toggle active
     document.querySelectorAll('.vs-chip').forEach(c=>c.classList.remove('active'));
     btn.classList.add('active');
 
-    const variantId = btn.dataset.variantId;
-    const price     = parseInt(btn.dataset.price);
-    const stock     = parseInt(btn.dataset.stock);
-    const label     = btn.dataset.label;
+    const v = VARIANTS_DATA[btn.dataset.variantId];
+    if (!v) return;
 
-    // Update hidden input
-    document.getElementById('formVariantId').value = variantId;
+    // Hidden input
+    document.getElementById('formVariantId').value = v.id;
 
-    // Update harga
-    const priceEl = document.getElementById('pdPrice');
-    if(priceEl){
-        priceEl.textContent = 'Rp ' + price.toLocaleString('id-ID');
-        priceEl.style.color = 'var(--gold)';
+    // Update price block
+    const priceEl    = document.getElementById('pdPrice');
+    const origEl     = document.getElementById('pdPriceOriginal');
+    const badgeEl    = document.getElementById('pdDiscBadge');
+    const hintEl     = document.getElementById('pdPriceHint');
+
+    if (priceEl) {
+        priceEl.textContent = 'Rp ' + v.finalPrice.toLocaleString('id-ID');
+        priceEl.style.color = v.hasDiscount ? 'var(--danger)' : 'var(--gold)';
     }
-    const hintEl = document.getElementById('pdPriceHint');
-    if(hintEl) hintEl.style.display = 'none';
+    if (hintEl) hintEl.style.display = 'none';
+
+    if (origEl) {
+        if (v.hasDiscount) {
+            origEl.textContent = 'Rp ' + v.price.toLocaleString('id-ID');
+            origEl.style.display = 'block';
+        } else {
+            origEl.style.display = 'none';
+        }
+    }
+    if (badgeEl) {
+        if (v.hasDiscount) {
+            badgeEl.textContent = '-' + v.discountPercent + '%';
+            badgeEl.style.display = 'inline-block';
+        } else {
+            badgeEl.style.display = 'none';
+        }
+    }
 
     // Update stok
     const stockBlock = document.getElementById('stockBlock');
     if(stockBlock){
-        if(stock === 0){
-            stockBlock.innerHTML = '<p class="stock-out">Stok habis</p>';
-        } else if(stock <= 5){
-            stockBlock.innerHTML = '<p class="stock-low">⚠ Stok tersisa ' + stock + '</p>';
-        } else {
-            stockBlock.innerHTML = '<p class="stock-ok">Stok tersedia (' + stock + ')</p>';
-        }
+        if(v.stock===0) stockBlock.innerHTML='<p class="stock-out">Stok habis</p>';
+        else if(v.stock<=5) stockBlock.innerHTML='<p class="stock-low">⚠ Stok tersisa '+v.stock+'</p>';
+        else stockBlock.innerHTML='<p class="stock-ok">Stok tersedia ('+v.stock+')</p>';
     }
 
     // Update qty max
     const qtyEl = document.getElementById('qty');
     if(qtyEl){
-        qtyEl.dataset.max = stock > 0 ? stock : 999;
-        if(parseInt(qtyEl.value) > stock && stock > 0) qtyEl.value = stock;
+        qtyEl.dataset.max = v.stock > 0 ? v.stock : 999;
+        if(parseInt(qtyEl.value) > v.stock && v.stock > 0) qtyEl.value = v.stock;
     }
 
-    // Update info text
+    // Info teks
     const infoEl = document.getElementById('vsSelectedInfo');
-    if(infoEl) infoEl.textContent = '✓ ' + label + ' dipilih';
+    if(infoEl) infoEl.textContent = '✓ ' + v.label + ' dipilih';
 
-    // Aktifkan tombol beli
-    const btnBuyNow  = document.getElementById('btnBuyNow');
-    const btnAddCart = document.getElementById('btnAddCart');
-    const enabled    = stock > 0;
-
-    if(btnBuyNow){
-        btnBuyNow.disabled = !enabled;
-        btnBuyNow.style.opacity = enabled ? '1' : '.4';
-        btnBuyNow.style.cursor  = enabled ? 'pointer' : 'not-allowed';
-    }
-    if(btnAddCart){
-        btnAddCart.disabled = !enabled;
-        btnAddCart.style.opacity = enabled ? '1' : '.4';
-        btnAddCart.style.cursor  = enabled ? 'pointer' : 'not-allowed';
-    }
+    // Aktifkan/nonaktifkan tombol
+    const enabled = v.stock > 0;
+    ['btnBuyNow','btnAddCart'].forEach(id => {
+        const b = document.getElementById(id);
+        if(b){ b.disabled=!enabled; b.style.opacity=enabled?'1':'.4'; b.style.cursor=enabled?'pointer':'not-allowed'; }
+    });
 }
 
-// ── Toast ───────
 function showToast(text){
     const t=document.getElementById('toast');
-    t.innerText=text;
-    t.style.opacity='1';
-    t.style.transform='translateX(-50%) translateY(0)';
+    t.innerText=text; t.style.opacity='1'; t.style.transform='translateX(-50%) translateY(0)';
     setTimeout(()=>{ t.style.opacity='0'; t.style.transform='translateX(-50%) translateY(20px)'; },2200);
 }
 
-// ── Wishlist ────
 document.querySelectorAll('.js-wishlist-form').forEach(form=>{
     form.addEventListener('submit', async function(e){
         e.preventDefault();
         const btn=form.querySelector('.js-wishlist-btn');
-        btn.classList.remove('animate');
-        void btn.offsetWidth;
-        btn.classList.add('animate');
+        btn.classList.remove('animate'); void btn.offsetWidth; btn.classList.add('animate');
         try{
-            const res=await fetch(form.action,{
-                method:'POST',
-                headers:{ 'X-CSRF-TOKEN':form.querySelector('input[name=_token]').value, 'Accept':'application/json', 'X-Requested-With':'XMLHttpRequest' }
-            });
+            const res=await fetch(form.action,{method:'POST',headers:{'X-CSRF-TOKEN':form.querySelector('input[name=_token]').value,'Accept':'application/json','X-Requested-With':'XMLHttpRequest'}});
             const data=await res.json();
             if(data.status==='added'){ btn.classList.add('active'); createBurst(btn); showToast('❤️ Ditambahkan ke wishlist'); }
             else{ btn.classList.remove('active'); showToast('💔 Dihapus dari wishlist'); }
@@ -632,14 +621,8 @@ document.querySelectorAll('.js-wishlist-form').forEach(form=>{
         }catch(err){ console.error(err); }
     });
 });
-function createBurst(el){
-    const b=document.createElement('span');
-    b.classList.add('heart-burst');
-    el.appendChild(b);
-    setTimeout(()=>b.remove(),600);
-}
+function createBurst(el){ const b=document.createElement('span'); b.classList.add('heart-burst'); el.appendChild(b); setTimeout(()=>b.remove(),600); }
 
-// ── Drag scroll ─
 function initDragScroll(el){
     if(!el) return;
     let isDown=false,startX=0,scrollLeft=0,moved=false;

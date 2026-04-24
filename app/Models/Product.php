@@ -48,7 +48,7 @@ class Product extends Model
         });
     }
 
-    // ── Relasi 
+    // ── Relasi ────────────────────────────────────────────────
 
     public function images()
     {
@@ -75,14 +75,13 @@ class Product extends Model
         return $this->belongsTo(Category::class);
     }
 
+    // ── Helpers ───────────────────────────────────────────────
+
     public function isMerchantProduct(): bool
     {
         return $this->store_id !== null;
     }
 
-    /**
-     * Apakah produk ini punya variant ukuran?
-     */
     public function hasVariants(): bool
     {
         if ($this->relationLoaded('variants')) {
@@ -128,6 +127,8 @@ class Product extends Model
         return $this->stock > 0 && $this->stock <= 5;
     }
 
+    // ── Harga produk tanpa variasi ─────────────────────────────
+
     public function getFinalPrice(): int
     {
         if ($this->discount_percent > 0) {
@@ -147,12 +148,14 @@ class Product extends Model
     }
 
     /**
-     * Harga terendah dari semua variant — untuk listing produk ("Mulai dari Rp X")
+     * Harga terendah dari semua variant (pakai final price setelah diskon variant).
+     * Dipakai di listing produk: "Mulai dari Rp X"
      */
     public function getMinVariantPrice(): int
     {
         if ($this->hasVariants()) {
-            return (int) $this->variants->min('price');
+            // Pakai final price tiap variant (sudah dipotong diskon per variant)
+            return (int) $this->variants->min(fn($v) => $v->getFinalPrice());
         }
         return $this->getFinalPrice();
     }
@@ -161,6 +164,8 @@ class Product extends Model
     {
         return 'Rp ' . number_format($this->getMinVariantPrice(), 0, ',', '.');
     }
+
+    // ── Ukuran tunggal ─────────────────────────────────────────
 
     public function getHeightLabel(): ?string
     {

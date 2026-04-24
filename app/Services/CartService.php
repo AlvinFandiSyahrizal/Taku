@@ -22,7 +22,7 @@ class CartService
     private function getFromDb(): array
     {
         $items = CartItem::where('user_id', Auth::id())
-            ->with(['product', 'product.store', 'variant'])
+            ->with(['product', 'product.store', 'product.variants', 'variant'])
             ->get();
 
         $cart = [];
@@ -47,14 +47,26 @@ class CartService
                 $variantLabel  = null;
             }
 
+            // Semua variant produk ini untuk dropdown di cart
+            $allVariants = $item->product->variants->map(fn($v) => [
+                'id'               => $v->id,
+                'label'            => $v->getLabel(),
+                'price'            => $v->price,
+                'final_price'      => $v->getFinalPrice(),
+                'discount_percent' => $v->discount_percent,
+                'stock'            => $v->stock,
+            ])->toArray();
+
             $key = $this->makeKey($item->product_id, $item->variant_id);
 
             $cart[$key] = [
                 'product_id'      => $item->product_id,
                 'variant_id'      => $item->variant_id,
                 'variant_label'   => $variantLabel,
+                'all_variants'    => $allVariants,   // ← BARU
                 'discount_pct'    => $discPct,
-                'store_id'        => $item->store_id,
+                'discount_percent'=> $discPct,
+                'store_id'        => $item->product->store_id,
                 'store_name'      => $item->product->store?->name ?? 'Taku Official',
                 'store_slug'      => $item->product->store?->slug ?? null,
                 'name'            => $item->product->name,
@@ -78,24 +90,40 @@ class CartService
 
     public function getGrouped(): array
     {
-        $cart = $this->get(); $grouped = [];
+        $cart    = $this->get();
+        $grouped = [];
+
         foreach ($cart as $key => $item) {
             if (!($item['is_active'] ?? true) || !($item['store_is_active'] ?? true)) continue;
+
             $storeKey = $item['store_id'] ?? 'official';
+
             if (!isset($grouped[$storeKey])) {
-                $grouped[$storeKey] = ['store_id' => $item['store_id'] ?? null, 'store_name' => $item['store_name'] ?? 'Taku Official', 'store_slug' => $item['store_slug'] ?? null, 'items' => []];
+                $grouped[$storeKey] = [
+                    'store_id'   => $item['store_id'] ?? null,
+                    'store_name' => $item['store_name'] ?? 'Taku Official',
+                    'store_slug' => $item['store_slug'] ?? null,
+                    'items'      => [],
+                ];
             }
+
             $grouped[$storeKey]['items'][$key] = $item;
         }
+
         return $grouped;
     }
 
     public function getUnavailable(): array
     {
-        $cart = $this->get(); $unavailable = [];
+        $cart        = $this->get();
+        $unavailable = [];
+
         foreach ($cart as $key => $item) {
-            if (!($item['is_active'] ?? true) || !($item['store_is_active'] ?? true)) $unavailable[$key] = $item;
+            if (!($item['is_active'] ?? true) || !($item['store_is_active'] ?? true)) {
+                $unavailable[$key] = $item;
+            }
         }
+
         return $unavailable;
     }
 
@@ -115,16 +143,51 @@ class CartService
         $variantLabel = $variant?->getLabel();
 
         if (Auth::check()) {
-            $item = CartItem::where('user_id', Auth::id())->where('product_id', $productId)->where('variant_id', $variantId)->first();
-            if ($item) { $item->increment('qty', $qty); }
-            else { CartItem::create(['user_id' => Auth::id(), 'product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId, 'qty' => $qty, 'is_selected' => true]); }
+            $item = CartItem::where('user_id', Auth::id())
+                ->where('product_id', $productId)
+                ->where('variant_id', $variantId)
+                ->first();
+
+            if ($item) {
+                $item->increment('qty', $qty);
+            } else {
+                CartItem::create([
+                    'user_id'    => Auth::id(),
+                    'product_id' => $productId,
+                    'variant_id' => $variantId,
+                    'store_id'   => $storeId,
+                    'qty'        => $qty,
+                    'is_selected'=> true,
+                ]);
+            }
         } else {
             $cart = session('cart', []);
             $key  = $this->makeKey($productId, $variantId);
-            if (isset($cart[$key])) { $cart[$key]['qty'] += $qty; }
-            else {
-                $cart[$key] = ['product_id' => $productId, 'variant_id' => $variantId, 'variant_label' => $variantLabel, 'discount_pct' => $discPct, 'store_id' => $storeId, 'store_name' => $storeName, 'store_slug' => $storeSlug, 'name' => $product->name, 'price' => $finalPrice, 'original_price' => $origPrice, 'image' => $product->image, 'qty' => $qty, 'stock' => $stock, 'is_active' => $product->is_active, 'store_is_active' => $product->store?->status === 'active'];
+
+            if (isset($cart[$key])) {
+                $cart[$key]['qty'] += $qty;
+            } else {
+                $cart[$key] = [
+                    'product_id'       => $productId,
+                    'variant_id'       => $variantId,
+                    'variant_label'    => $variantLabel,
+                    'all_variants'     => [],   // session cart tidak simpan all_variants (diload saat login)
+                    'discount_pct'     => $discPct,
+                    'discount_percent' => $discPct,
+                    'store_id'         => $storeId,
+                    'store_name'       => $storeName,
+                    'store_slug'       => $storeSlug,
+                    'name'             => $product->name,
+                    'price'            => $finalPrice,
+                    'original_price'   => $origPrice,
+                    'image'            => $product->image,
+                    'qty'              => $qty,
+                    'stock'            => $stock,
+                    'is_active'        => $product->is_active,
+                    'store_is_active'  => $product->store?->status === 'active',
+                ];
             }
+
             session(['cart' => $cart]);
         }
     }
@@ -132,8 +195,11 @@ class CartService
     public function updateByKey(string $key, int $qty): void
     {
         [$productId, $variantId] = $this->parseKey($key);
+
         if (Auth::check()) {
-            $q = CartItem::where('user_id', Auth::id())->where('product_id', $productId)->where('variant_id', $variantId);
+            $q = CartItem::where('user_id', Auth::id())
+                ->where('product_id', $productId)
+                ->where('variant_id', $variantId);
             $qty <= 0 ? $q->delete() : $q->update(['qty' => $qty]);
         } else {
             $cart = session('cart', []);
@@ -143,21 +209,36 @@ class CartService
         }
     }
 
-    public function update(int $productId, int $qty): void { $this->updateByKey((string) $productId, $qty); }
+    public function update(int $productId, int $qty): void
+    {
+        $this->updateByKey((string) $productId, $qty);
+    }
 
     public function removeByKey(string $key): void
     {
         [$productId, $variantId] = $this->parseKey($key);
+
         if (Auth::check()) {
-            CartItem::where('user_id', Auth::id())->where('product_id', $productId)->where('variant_id', $variantId)->delete();
+            CartItem::where('user_id', Auth::id())
+                ->where('product_id', $productId)
+                ->where('variant_id', $variantId)
+                ->delete();
         } else {
-            $cart = session('cart', []); unset($cart[$key]); session(['cart' => $cart]);
+            $cart = session('cart', []);
+            unset($cart[$key]);
+            session(['cart' => $cart]);
         }
     }
 
-    public function remove(int $productId): void { $this->removeByKey((string) $productId); }
+    public function remove(int $productId): void
+    {
+        $this->removeByKey((string) $productId);
+    }
 
-    public function removeItems(array $keys): void { foreach ($keys as $key) $this->removeByKey((string) $key); }
+    public function removeItems(array $keys): void
+    {
+        foreach ($keys as $key) $this->removeByKey((string) $key);
+    }
 
     public function clear(): void
     {
@@ -180,12 +261,30 @@ class CartService
     {
         $sessionCart = session('cart', []);
         if (empty($sessionCart)) return;
+
         foreach ($sessionCart as $key => $item) {
-            $productId = $item['product_id']; $variantId = $item['variant_id'] ?? null;
-            $existing  = CartItem::where('user_id', Auth::id())->where('product_id', $productId)->where('variant_id', $variantId)->first();
-            if ($existing) { $existing->increment('qty', $item['qty']); }
-            else { CartItem::create(['user_id' => Auth::id(), 'product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $item['store_id'] ?? null, 'qty' => $item['qty'], 'is_selected' => true]); }
+            $productId = $item['product_id'];
+            $variantId = $item['variant_id'] ?? null;
+
+            $existing = CartItem::where('user_id', Auth::id())
+                ->where('product_id', $productId)
+                ->where('variant_id', $variantId)
+                ->first();
+
+            if ($existing) {
+                $existing->increment('qty', $item['qty']);
+            } else {
+                CartItem::create([
+                    'user_id'    => Auth::id(),
+                    'product_id' => $productId,
+                    'variant_id' => $variantId,
+                    'store_id'   => $item['store_id'] ?? null,
+                    'qty'        => $item['qty'],
+                    'is_selected'=> true,
+                ]);
+            }
         }
+
         session()->forget('cart');
     }
 

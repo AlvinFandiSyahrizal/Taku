@@ -16,13 +16,17 @@ class CartController extends Controller
         $grouped     = $this->cart->getGrouped();
         $unavailable = $this->cart->getUnavailable();
         $total       = $this->cart->total();
+
         return view('pages.Cart', compact('grouped', 'unavailable', 'total'));
     }
 
     public function add(Request $request)
     {
         $product = Product::with('variants')->find($request->product_id);
-        if (!$product) return redirect()->back()->with('error', 'Produk tidak ditemukan.');
+
+        if (!$product) {
+            return redirect()->back()->with('error', 'Produk tidak ditemukan.');
+        }
 
         $variantId = $request->variant_id ? (int) $request->variant_id : null;
         $qty       = max(1, (int) $request->qty);
@@ -33,50 +37,122 @@ class CartController extends Controller
 
         if ($variantId) {
             $variant = ProductVariant::find($variantId);
-            if (!$variant || $variant->product_id !== $product->id)
+            if (!$variant || $variant->product_id !== $product->id) {
                 return redirect()->back()->with('error', 'Variant tidak valid.');
-
+            }
             $cart   = $this->cart->get();
             $key    = "{$product->id}_{$variantId}";
             $inCart = $cart[$key]['qty'] ?? 0;
-            if ($variant->stock > 0 && ($inCart + $qty) > $variant->stock)
+            if ($variant->stock > 0 && ($inCart + $qty) > $variant->stock) {
                 return redirect()->back()->with('error', "Stok tidak mencukupi. Tersisa {$variant->stock}.");
+            }
         } else {
             $cart   = $this->cart->get();
             $key    = (string) $product->id;
             $inCart = $cart[$key]['qty'] ?? 0;
-            if ($product->stock > 0 && ($inCart + $qty) > $product->stock)
+            if ($product->stock > 0 && ($inCart + $qty) > $product->stock) {
                 return redirect()->back()->with('error', "Stok tidak mencukupi. Tersisa {$product->stock}.");
+            }
         }
 
         $this->cart->add($product->id, $qty, $variantId);
 
-        if ($request->action === 'buy_now') return redirect()->route('cart.index');
+        if ($request->action === 'buy_now') {
+            return redirect()->route('cart.index');
+        }
+
         return redirect()->back()->with('success', __('app.added_to_cart'));
     }
 
     public function update(Request $request, $id)
     {
-        $key = (string) $id;
-        $qty = (int) $request->qty;
-
+        $key       = (string) $id;
+        $qty       = (int) $request->qty;
         $parts     = explode('_', $key, 2);
         $productId = (int) $parts[0];
         $variantId = isset($parts[1]) ? (int) $parts[1] : null;
 
         if ($variantId) {
             $variant = ProductVariant::find($variantId);
-            if ($variant && $variant->stock > 0 && $qty > $variant->stock) $qty = $variant->stock;
+            if ($variant && $variant->stock > 0 && $qty > $variant->stock) {
+                $qty = $variant->stock;
+            }
         } else {
             $product = Product::find($productId);
-            if ($product && $product->stock > 0 && $qty > $product->stock) $qty = $product->stock;
+            if ($product && $product->stock > 0 && $qty > $product->stock) {
+                $qty = $product->stock;
+            }
         }
 
         $this->cart->updateByKey($key, $qty);
 
-        if ($request->ajax() || $request->wantsJson())
+        if ($request->ajax() || $request->wantsJson()) {
             return response()->json(['ok' => true, 'qty' => $qty]);
+        }
+
         return redirect()->route('cart.index');
+    }
+
+    /**
+     * Ganti variant item di cart (AJAX).
+     * Hapus key lama, tambah key baru dengan qty yang sama.
+     *
+     * Request body: { old_key: "15_3", new_variant_id: 5 }
+     */
+    public function changeVariant(Request $request)
+    {
+        $request->validate([
+            'old_key'        => 'required|string',
+            'new_variant_id' => 'required|integer|exists:product_variants,id',
+        ]);
+
+        $oldKey       = (string) $request->old_key;
+        $newVariantId = (int) $request->new_variant_id;
+
+        // Ambil qty item lama
+        $cart    = $this->cart->get();
+        $oldItem = $cart[$oldKey] ?? null;
+
+        if (!$oldItem) {
+            return response()->json(['ok' => false, 'message' => 'Item tidak ditemukan di cart.'], 404);
+        }
+
+        $qty       = (int) ($oldItem['qty'] ?? 1);
+        $productId = (int) $oldItem['product_id'];
+
+        // Validasi variant baru milik produk yang sama
+        $newVariant = ProductVariant::find($newVariantId);
+        if (!$newVariant || $newVariant->product_id !== $productId) {
+            return response()->json(['ok' => false, 'message' => 'Variant tidak valid.'], 422);
+        }
+
+        // Cek stok variant baru
+        $newKey    = "{$productId}_{$newVariantId}";
+        $inCart    = $cart[$newKey]['qty'] ?? 0;
+        $totalQty  = $inCart + $qty;
+
+        if ($newVariant->stock > 0 && $totalQty > $newVariant->stock) {
+            return response()->json([
+                'ok'      => false,
+                'message' => "Stok {$newVariant->getLabel()} hanya tersisa {$newVariant->stock}.",
+            ], 422);
+        }
+
+        // Hapus item lama, tambah item baru (atau merge kalau sudah ada)
+        $this->cart->removeByKey($oldKey);
+        $this->cart->add($productId, $qty, $newVariantId);
+
+        // Kembalikan data variant baru untuk update UI tanpa reload
+        return response()->json([
+            'ok'        => true,
+            'new_key'   => $newKey,
+            'label'     => $newVariant->getLabel(),
+            'price'     => $newVariant->getFinalPrice(),
+            'original_price' => $newVariant->hasDiscount() ? $newVariant->price : null,
+            'discount'  => $newVariant->hasDiscount() ? $newVariant->discount_percent : 0,
+            'stock'     => $newVariant->stock,
+            'qty'       => $qty,
+        ]);
     }
 
     public function remove($id)
@@ -102,7 +178,10 @@ class CartController extends Controller
             ->where('variant_id', $variantId)
             ->first();
 
-        if ($item) $item->update(['is_selected' => $request->boolean('selected')]);
+        if ($item) {
+            $item->update(['is_selected' => $request->boolean('selected')]);
+        }
+
         return response()->json(['ok' => true]);
     }
 
@@ -110,79 +189,25 @@ class CartController extends Controller
     {
         \App\Models\CartItem::where('user_id', auth()->id())
             ->update(['is_selected' => $request->boolean('selected')]);
+
         return response()->json(['ok' => true]);
     }
 
     public function removeSelected(Request $request)
     {
         $keys = $request->input('ids', []);
+
         foreach ($keys as $key) {
             $parts     = explode('_', (string) $key, 2);
             $productId = (int) $parts[0];
             $variantId = isset($parts[1]) ? (int) $parts[1] : null;
+
             \App\Models\CartItem::where('user_id', auth()->id())
                 ->where('product_id', $productId)
                 ->where('variant_id', $variantId)
                 ->delete();
         }
+
         return redirect()->route('cart.index')->with('success', 'Produk terpilih dihapus.');
-    }
-
-    /**
-     * AJAX — Ganti variant item di cart.
-     * Dipanggil dari dropdown variant di halaman cart.
-     * Menghapus item lama (oldKey) dan membuat/merge item baru (newVariantId).
-     */
-    public function changeVariant(Request $request)
-    {
-        $request->validate([
-            'old_key'       => 'required|string',
-            'new_variant_id'=> 'required|integer',
-        ]);
-
-        $oldKey       = $request->old_key;
-        $newVariantId = (int) $request->new_variant_id;
-
-        // Parse old key
-        $parts     = explode('_', $oldKey, 2);
-        $productId = (int) $parts[0];
-
-        // Cek variant baru valid
-        $newVariant = ProductVariant::where('id', $newVariantId)
-            ->where('product_id', $productId)
-            ->first();
-
-        if (!$newVariant) {
-            return response()->json(['ok' => false, 'message' => 'Variant tidak valid.'], 422);
-        }
-
-        if ($newVariant->stock === 0) {
-            return response()->json(['ok' => false, 'message' => 'Stok ukuran ini habis.'], 422);
-        }
-
-        // Ambil qty lama
-        $cart   = $this->cart->get();
-        $oldQty = $cart[$oldKey]['qty'] ?? 1;
-
-        // Hapus item lama
-        $this->cart->removeByKey($oldKey);
-
-        // Tambah/merge ke variant baru
-        $finalQty = $newVariant->stock > 0 ? min($oldQty, $newVariant->stock) : $oldQty;
-        $this->cart->add($productId, $finalQty, $newVariantId);
-
-        $newKey = "{$productId}_{$newVariantId}";
-
-        return response()->json([
-            'ok'          => true,
-            'new_key'     => $newKey,
-            'new_label'   => $newVariant->getLabel(),
-            'final_price' => $newVariant->getFinalPrice(),
-            'orig_price'  => $newVariant->price,
-            'has_discount'=> $newVariant->hasDiscount(),
-            'discount_pct'=> $newVariant->discount_percent,
-            'stock'       => $newVariant->stock,
-            'qty'         => $finalQty,
-        ]);
     }
 }
