@@ -3,7 +3,6 @@
 namespace App\Http\Controllers\Merchant;
 
 use App\Http\Controllers\Controller;
-use App\Models\Category;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductVariant;
@@ -14,29 +13,11 @@ use Illuminate\Support\Facades\Storage;
 
 class ProductController extends Controller
 {
-    private function myStore()
-    {
-        return Auth::user()->store;
-    }
+    private function myStore() { return Auth::user()->store; }
 
     private function authorizeProduct(Product $product)
     {
-        if ($product->store_id !== $this->myStore()->id) {
-            abort(403);
-        }
-    }
-
-    /** Ambil kategori milik store ini beserta children, untuk dropdown form produk */
-    private function getCategories()
-    {
-        $store = $this->myStore();
-
-        return Category::where('store_id', $store->id)
-            ->whereNull('parent_id')
-            ->with(['children' => fn($q) => $q->active()->orderBy('sort')])
-            ->active()
-            ->orderBy('sort')
-            ->get();
+        if ($product->store_id !== $this->myStore()->id) abort(403);
     }
 
     public function index()
@@ -46,11 +27,7 @@ class ProductController extends Controller
         return view('merchant.products.index', compact('products', 'store'));
     }
 
-    public function create()
-    {
-        $categories = $this->getCategories();
-        return view('merchant.products.create', compact('categories'));
-    }
+    public function create() { return view('merchant.products.create'); }
 
     public function store(Request $request)
     {
@@ -59,7 +36,6 @@ class ProductController extends Controller
             'price'            => 'required|integer|min:0',
             'discount_percent' => 'nullable|integer|min:0|max:100',
             'stock'            => 'nullable|integer|min:0',
-            'category_id'      => 'nullable|exists:categories,id',
             'desc_id'          => 'nullable|string',
             'desc_en'          => 'nullable|string',
             'detail_id'        => 'nullable|string',
@@ -71,22 +47,15 @@ class ProductController extends Controller
             'height_unit'      => 'nullable|in:cm,meter',
             'diameter'         => 'nullable|numeric|min:0',
             'diameter_unit'    => 'nullable|in:cm,meter',
-            'variants'                 => 'nullable|array',
-            'variants.*.height'        => 'nullable|numeric|min:0',
-            'variants.*.height_unit'   => 'nullable|in:cm,meter',
-            'variants.*.diameter'      => 'nullable|numeric|min:0',
-            'variants.*.diameter_unit' => 'nullable|in:cm,meter',
-            'variants.*.price'         => 'required_with:variants|integer|min:0',
-            'variants.*.stock'         => 'nullable|integer|min:0',
+            'variants'                    => 'nullable|array',
+            'variants.*.price'            => 'required_with:variants|integer|min:0',
+            'variants.*.stock'            => 'nullable|integer|min:0',
+            'variants.*.discount_percent' => 'nullable|integer|min:0|max:100',
+            'variants.*.height'           => 'nullable|numeric|min:0',
+            'variants.*.height_unit'      => 'nullable|in:cm,meter',
+            'variants.*.diameter'         => 'nullable|numeric|min:0',
+            'variants.*.diameter_unit'    => 'nullable|in:cm,meter',
         ]);
-
-        // Pastikan category_id yang dipilih memang milik store ini
-        if ($request->category_id) {
-            $cat = Category::find($request->category_id);
-            if (!$cat || $cat->store_id !== $this->myStore()->id) {
-                return back()->withErrors(['category_id' => 'Kategori tidak valid.'])->withInput();
-            }
-        }
 
         $imagePath = null;
         if ($request->hasFile('image')) {
@@ -100,7 +69,6 @@ class ProductController extends Controller
             'price'            => $request->price,
             'discount_percent' => (int) $request->get('discount_percent', 0),
             'stock'            => (int) $request->get('stock', 0),
-            'category_id'      => $request->category_id ?: null,
             'desc_id'          => $request->desc_id,
             'desc_en'          => $request->desc_en,
             'detail_id'        => $request->detail_id,
@@ -119,24 +87,18 @@ class ProductController extends Controller
         if ($request->hasFile('images')) {
             foreach ($request->file('images') as $i => $img) {
                 $path = $img->store('products', 'public');
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image'      => 'storage/' . $path,
-                    'sort'       => $i,
-                ]);
+                ProductImage::create(['product_id' => $product->id, 'image' => 'storage/' . $path, 'sort' => $i]);
             }
         }
 
-        return redirect()->route('merchant.products.index')
-            ->with('success', 'Produk berhasil ditambahkan.');
+        return redirect()->route('merchant.products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
 
     public function edit(Product $product)
     {
         $this->authorizeProduct($product);
         $product->load('images', 'variants');
-        $categories = $this->getCategories();
-        return view('merchant.products.edit', compact('product', 'categories'));
+        return view('merchant.products.edit', compact('product'));
     }
 
     public function update(Request $request, Product $product)
@@ -146,7 +108,6 @@ class ProductController extends Controller
         $request->validate([
             'name'             => 'required|string|max:200',
             'price'            => 'required|integer|min:0',
-            'category_id'      => 'nullable|exists:categories,id',
             'desc_id'          => 'nullable|string',
             'desc_en'          => 'nullable|string',
             'detail_id'        => 'nullable|string',
@@ -160,28 +121,19 @@ class ProductController extends Controller
             'height_unit'      => 'nullable|in:cm,meter',
             'diameter'         => 'nullable|numeric|min:0',
             'diameter_unit'    => 'nullable|in:cm,meter',
-            'variants'                 => 'nullable|array',
-            'variants.*.height'        => 'nullable|numeric|min:0',
-            'variants.*.height_unit'   => 'nullable|in:cm,meter',
-            'variants.*.diameter'      => 'nullable|numeric|min:0',
-            'variants.*.diameter_unit' => 'nullable|in:cm,meter',
-            'variants.*.price'         => 'required_with:variants|integer|min:0',
-            'variants.*.stock'         => 'nullable|integer|min:0',
+            'variants'                    => 'nullable|array',
+            'variants.*.price'            => 'required_with:variants|integer|min:0',
+            'variants.*.stock'            => 'nullable|integer|min:0',
+            'variants.*.discount_percent' => 'nullable|integer|min:0|max:100',
+            'variants.*.height'           => 'nullable|numeric|min:0',
+            'variants.*.height_unit'      => 'nullable|in:cm,meter',
+            'variants.*.diameter'         => 'nullable|numeric|min:0',
+            'variants.*.diameter_unit'    => 'nullable|in:cm,meter',
         ]);
-
-        // Pastikan category_id milik store ini
-        if ($request->category_id) {
-            $cat = Category::find($request->category_id);
-            if (!$cat || $cat->store_id !== $this->myStore()->id) {
-                return back()->withErrors(['category_id' => 'Kategori tidak valid.'])->withInput();
-            }
-        }
 
         $currentImage = $product->image;
         if ($request->hasFile('image')) {
-            if ($currentImage) {
-                Storage::disk('public')->delete(str_replace('storage/', '', $currentImage));
-            }
+            if ($currentImage) Storage::disk('public')->delete(str_replace('storage/', '', $currentImage));
             $newPath      = $request->file('image')->store('products', 'public');
             $currentImage = 'storage/' . $newPath;
         }
@@ -190,7 +142,6 @@ class ProductController extends Controller
             'name'             => $request->name,
             'slug'             => Str::slug($request->name) . '-' . $product->id,
             'price'            => $request->price,
-            'category_id'      => $request->category_id ?: null,
             'desc_id'          => $request->desc_id,
             'desc_en'          => $request->desc_en,
             'detail_id'        => $request->detail_id,
@@ -212,30 +163,20 @@ class ProductController extends Controller
             $lastSort = $product->images()->max('sort') ?? 0;
             foreach ($request->file('images') as $i => $img) {
                 $path = $img->store('products', 'public');
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image'      => 'storage/' . $path,
-                    'sort'       => $lastSort + $i + 1,
-                ]);
+                ProductImage::create(['product_id' => $product->id, 'image' => 'storage/' . $path, 'sort' => $lastSort + $i + 1]);
             }
         }
 
-        return redirect()->route('merchant.products.index')
-            ->with('success', 'Produk berhasil diupdate.');
+        return redirect()->route('merchant.products.index')->with('success', 'Produk berhasil diupdate.');
     }
 
     public function destroy(Product $product)
     {
         $this->authorizeProduct($product);
-        foreach ($product->images as $img) {
-            Storage::disk('public')->delete(str_replace('storage/', '', $img->image));
-        }
-        if ($product->image) {
-            Storage::disk('public')->delete(str_replace('storage/', '', $product->image));
-        }
+        foreach ($product->images as $img) Storage::disk('public')->delete(str_replace('storage/', '', $img->image));
+        if ($product->image) Storage::disk('public')->delete(str_replace('storage/', '', $product->image));
         $product->delete();
-        return redirect()->route('merchant.products.index')
-            ->with('success', 'Produk berhasil dihapus.');
+        return redirect()->route('merchant.products.index')->with('success', 'Produk berhasil dihapus.');
     }
 
     public function destroyImage(ProductImage $image)
@@ -261,23 +202,20 @@ class ProductController extends Controller
             if (empty($v['price'])) continue;
 
             $data = [
-                'product_id'    => $product->id,
-                'height'        => $v['height'] ?: null,
-                'height_unit'   => $v['height'] ? ($v['height_unit'] ?? 'cm') : 'cm',
-                'diameter'      => $v['diameter'] ?: null,
-                'diameter_unit' => $v['diameter'] ? ($v['diameter_unit'] ?? 'cm') : 'cm',
-                'price'         => (int) $v['price'],
-                'stock'         => (int) ($v['stock'] ?? 0),
-                'sort'          => $i,
+                'product_id'       => $product->id,
+                'height'           => $v['height'] ?: null,
+                'height_unit'      => $v['height'] ? ($v['height_unit'] ?? 'cm') : 'cm',
+                'diameter'         => $v['diameter'] ?: null,
+                'diameter_unit'    => $v['diameter'] ? ($v['diameter_unit'] ?? 'cm') : 'cm',
+                'price'            => (int) $v['price'],
+                'stock'            => (int) ($v['stock'] ?? 0),
+                'discount_percent' => (int) ($v['discount_percent'] ?? 0),
+                'sort'             => $i,
             ];
 
             if (!empty($v['id'])) {
-                $variant = ProductVariant::where('id', $v['id'])
-                    ->where('product_id', $product->id)->first();
-                if ($variant) {
-                    $variant->update($data);
-                    $incomingIds[] = $variant->id;
-                }
+                $variant = ProductVariant::where('id', $v['id'])->where('product_id', $product->id)->first();
+                if ($variant) { $variant->update($data); $incomingIds[] = $variant->id; }
             } else {
                 $variant       = ProductVariant::create($data);
                 $incomingIds[] = $variant->id;

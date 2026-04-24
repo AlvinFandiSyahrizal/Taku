@@ -9,26 +9,14 @@ use Illuminate\Support\Facades\Auth;
 
 class CartService
 {
-    /**
-     * Cart key format:
-     *   - Produk dengan variant : "{productId}_{variantId}"
-     *   - Produk tanpa variant  : "{productId}"
-     *
-     * Ini supaya 1 produk bisa masuk cart 2x dengan variant berbeda.
-     */
     private function makeKey(int $productId, ?int $variantId): string
     {
         return $variantId ? "{$productId}_{$variantId}" : (string) $productId;
     }
 
-    // ── GET 
-
     public function get(): array
     {
-        if (Auth::check()) {
-            return $this->getFromDb();
-        }
-        return $this->getFromSession();
+        return Auth::check() ? $this->getFromDb() : $this->getFromSession();
     }
 
     private function getFromDb(): array
@@ -45,16 +33,19 @@ class CartService
                 ? true
                 : $item->product->store?->status === 'active';
 
-            // Kalau ada variant, pakai harga & stok dari variant
-            $price = $item->variant
-                ? $item->variant->price
-                : $item->product->getFinalPrice();
-
-            $stock = $item->variant
-                ? $item->variant->stock
-                : ($item->product->stock ?? 0);
-
-            $variantLabel = $item->variant?->getLabel();
+            if ($item->variant) {
+                $finalPrice    = $item->variant->getFinalPrice();
+                $originalPrice = $item->variant->price;
+                $stock         = $item->variant->stock;
+                $discPct       = $item->variant->discount_percent;
+                $variantLabel  = $item->variant->getLabel();
+            } else {
+                $finalPrice    = $item->product->getFinalPrice();
+                $originalPrice = $item->product->price;
+                $stock         = $item->product->stock ?? 0;
+                $discPct       = $item->product->discount_percent ?? 0;
+                $variantLabel  = null;
+            }
 
             $key = $this->makeKey($item->product_id, $item->variant_id);
 
@@ -62,12 +53,13 @@ class CartService
                 'product_id'      => $item->product_id,
                 'variant_id'      => $item->variant_id,
                 'variant_label'   => $variantLabel,
+                'discount_pct'    => $discPct,
                 'store_id'        => $item->store_id,
                 'store_name'      => $item->product->store?->name ?? 'Taku Official',
                 'store_slug'      => $item->product->store?->slug ?? null,
                 'name'            => $item->product->name,
-                'price'           => $price,
-                'original_price'  => $item->product->price,
+                'price'           => $finalPrice,
+                'original_price'  => $originalPrice,
                 'image'           => $item->product->image,
                 'qty'             => $item->qty,
                 'is_selected'     => (bool) $item->is_selected,
@@ -84,251 +76,122 @@ class CartService
         return session('cart', []);
     }
 
-    // ── GROUPED (untuk Cart & Checkout view)
-
     public function getGrouped(): array
     {
-        $cart    = $this->get();
-        $grouped = [];
-
+        $cart = $this->get(); $grouped = [];
         foreach ($cart as $key => $item) {
-            $isActive    = $item['is_active'] ?? true;
-            $storeActive = $item['store_is_active'] ?? true;
-
-            if (!$isActive || !$storeActive) continue;
-
+            if (!($item['is_active'] ?? true) || !($item['store_is_active'] ?? true)) continue;
             $storeKey = $item['store_id'] ?? 'official';
-
             if (!isset($grouped[$storeKey])) {
-                $grouped[$storeKey] = [
-                    'store_id'   => $item['store_id'] ?? null,
-                    'store_name' => $item['store_name'] ?? 'Taku Official',
-                    'store_slug' => $item['store_slug'] ?? null,
-                    'items'      => [],
-                ];
+                $grouped[$storeKey] = ['store_id' => $item['store_id'] ?? null, 'store_name' => $item['store_name'] ?? 'Taku Official', 'store_slug' => $item['store_slug'] ?? null, 'items' => []];
             }
-
             $grouped[$storeKey]['items'][$key] = $item;
         }
-
         return $grouped;
     }
 
     public function getUnavailable(): array
     {
-        $cart        = $this->get();
-        $unavailable = [];
-
+        $cart = $this->get(); $unavailable = [];
         foreach ($cart as $key => $item) {
-            $isActive    = $item['is_active'] ?? true;
-            $storeActive = $item['store_is_active'] ?? true;
-
-            if (!$isActive || !$storeActive) {
-                $unavailable[$key] = $item;
-            }
+            if (!($item['is_active'] ?? true) || !($item['store_is_active'] ?? true)) $unavailable[$key] = $item;
         }
-
         return $unavailable;
     }
-
-    // ── ADD
 
     public function add(int $productId, int $qty = 1, ?int $variantId = null): void
     {
         $product = Product::with('store')->find($productId);
         if (!$product) return;
 
-        $variant = $variantId ? ProductVariant::find($variantId) : null;
-
-        $storeId    = $product->store_id;
-        $storeName  = $product->store?->name ?? 'Taku Official';
-        $storeSlug  = $product->store?->slug ?? null;
-        $price      = $variant ? $variant->price : $product->getFinalPrice();
-        $stock      = $variant ? $variant->stock : $product->stock;
+        $variant      = $variantId ? ProductVariant::find($variantId) : null;
+        $storeId      = $product->store_id;
+        $storeName    = $product->store?->name ?? 'Taku Official';
+        $storeSlug    = $product->store?->slug ?? null;
+        $finalPrice   = $variant ? $variant->getFinalPrice() : $product->getFinalPrice();
+        $origPrice    = $variant ? $variant->price : $product->price;
+        $stock        = $variant ? $variant->stock : $product->stock;
+        $discPct      = $variant ? $variant->discount_percent : ($product->discount_percent ?? 0);
+        $variantLabel = $variant?->getLabel();
 
         if (Auth::check()) {
-            $item = CartItem::where('user_id', Auth::id())
-                ->where('product_id', $productId)
-                ->where('variant_id', $variantId)  // null-safe: WHERE variant_id IS NULL atau = X
-                ->first();
-
-            if ($item) {
-                $item->increment('qty', $qty);
-            } else {
-                CartItem::create([
-                    'user_id'     => Auth::id(),
-                    'product_id'  => $productId,
-                    'variant_id'  => $variantId,
-                    'store_id'    => $storeId,
-                    'qty'         => $qty,
-                    'is_selected' => true,
-                ]);
-            }
+            $item = CartItem::where('user_id', Auth::id())->where('product_id', $productId)->where('variant_id', $variantId)->first();
+            if ($item) { $item->increment('qty', $qty); }
+            else { CartItem::create(['user_id' => Auth::id(), 'product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $storeId, 'qty' => $qty, 'is_selected' => true]); }
         } else {
-            $cart        = session('cart', []);
-            $key         = $this->makeKey($productId, $variantId);
-            $variantLabel = $variant?->getLabel();
-
-            if (isset($cart[$key])) {
-                $cart[$key]['qty'] += $qty;
-            } else {
-                $cart[$key] = [
-                    'product_id'      => $productId,
-                    'variant_id'      => $variantId,
-                    'variant_label'   => $variantLabel,
-                    'store_id'        => $storeId,
-                    'store_name'      => $storeName,
-                    'store_slug'      => $storeSlug,
-                    'name'            => $product->name,
-                    'price'           => $price,
-                    'original_price'  => $product->price,
-                    'image'           => $product->image,
-                    'qty'             => $qty,
-                    'is_active'       => $product->is_active,
-                    'store_is_active' => $product->store?->status === 'active',
-                    'stock'           => $stock,
-                ];
+            $cart = session('cart', []);
+            $key  = $this->makeKey($productId, $variantId);
+            if (isset($cart[$key])) { $cart[$key]['qty'] += $qty; }
+            else {
+                $cart[$key] = ['product_id' => $productId, 'variant_id' => $variantId, 'variant_label' => $variantLabel, 'discount_pct' => $discPct, 'store_id' => $storeId, 'store_name' => $storeName, 'store_slug' => $storeSlug, 'name' => $product->name, 'price' => $finalPrice, 'original_price' => $origPrice, 'image' => $product->image, 'qty' => $qty, 'stock' => $stock, 'is_active' => $product->is_active, 'store_is_active' => $product->store?->status === 'active'];
             }
             session(['cart' => $cart]);
         }
     }
 
-    // ── UPDATE ────────────────────────────────────────────────────────────────
-
-    /**
-     * Update qty berdasarkan cart key (format: "productId" atau "productId_variantId")
-     */
     public function updateByKey(string $key, int $qty): void
     {
         [$productId, $variantId] = $this->parseKey($key);
-
         if (Auth::check()) {
-            $query = CartItem::where('user_id', Auth::id())
-                ->where('product_id', $productId)
-                ->where('variant_id', $variantId);
-
-            if ($qty <= 0) {
-                $query->delete();
-            } else {
-                $query->update(['qty' => $qty]);
-            }
+            $q = CartItem::where('user_id', Auth::id())->where('product_id', $productId)->where('variant_id', $variantId);
+            $qty <= 0 ? $q->delete() : $q->update(['qty' => $qty]);
         } else {
             $cart = session('cart', []);
-            if ($qty <= 0) {
-                unset($cart[$key]);
-            } elseif (isset($cart[$key])) {
-                $cart[$key]['qty'] = $qty;
-            }
+            if ($qty <= 0) unset($cart[$key]);
+            elseif (isset($cart[$key])) $cart[$key]['qty'] = $qty;
             session(['cart' => $cart]);
         }
     }
 
-    /** Backward-compat: update by product_id saja (untuk produk tanpa variant) */
-    public function update(int $productId, int $qty): void
-    {
-        $this->updateByKey((string) $productId, $qty);
-    }
-
-    // ── REMOVE
+    public function update(int $productId, int $qty): void { $this->updateByKey((string) $productId, $qty); }
 
     public function removeByKey(string $key): void
     {
         [$productId, $variantId] = $this->parseKey($key);
-
         if (Auth::check()) {
-            CartItem::where('user_id', Auth::id())
-                ->where('product_id', $productId)
-                ->where('variant_id', $variantId)
-                ->delete();
+            CartItem::where('user_id', Auth::id())->where('product_id', $productId)->where('variant_id', $variantId)->delete();
         } else {
-            $cart = session('cart', []);
-            unset($cart[$key]);
-            session(['cart' => $cart]);
+            $cart = session('cart', []); unset($cart[$key]); session(['cart' => $cart]);
         }
     }
 
-    /** Backward-compat */
-    public function remove(int $productId): void
-    {
-        $this->removeByKey((string) $productId);
-    }
+    public function remove(int $productId): void { $this->removeByKey((string) $productId); }
 
-    public function removeItems(array $keys): void
-    {
-        foreach ($keys as $key) {
-            $this->removeByKey((string) $key);
-        }
-    }
+    public function removeItems(array $keys): void { foreach ($keys as $key) $this->removeByKey((string) $key); }
 
     public function clear(): void
     {
-        if (Auth::check()) {
-            CartItem::where('user_id', Auth::id())->delete();
-        }
+        if (Auth::check()) CartItem::where('user_id', Auth::id())->delete();
         session()->forget('cart');
     }
 
-    // ── TOTAL & COUNT
     public function total(): int
     {
-        return array_sum(array_map(
-            fn($i) => ($i['price'] ?? 0) * $i['qty'],
-            $this->get()
-        ));
+        return array_sum(array_map(fn($i) => ($i['price'] ?? 0) * $i['qty'], $this->get()));
     }
 
     public function count(): int
     {
-        if (Auth::check()) {
-            return CartItem::where('user_id', Auth::id())->sum('qty');
-        }
+        if (Auth::check()) return CartItem::where('user_id', Auth::id())->sum('qty');
         return array_sum(array_column(session('cart', []), 'qty'));
     }
-
-    // ── MERGE session → DB setelah login ─────────────────────────────────────
 
     public function mergeSessionToDb(): void
     {
         $sessionCart = session('cart', []);
         if (empty($sessionCart)) return;
-
         foreach ($sessionCart as $key => $item) {
-            $productId = $item['product_id'];
-            $variantId = $item['variant_id'] ?? null;
-
-            $existing = CartItem::where('user_id', Auth::id())
-                ->where('product_id', $productId)
-                ->where('variant_id', $variantId)
-                ->first();
-
-            if ($existing) {
-                $existing->increment('qty', $item['qty']);
-            } else {
-                CartItem::create([
-                    'user_id'    => Auth::id(),
-                    'product_id' => $productId,
-                    'variant_id' => $variantId,
-                    'store_id'   => $item['store_id'] ?? null,
-                    'qty'        => $item['qty'],
-                    'is_selected' => true,
-                ]);
-            }
+            $productId = $item['product_id']; $variantId = $item['variant_id'] ?? null;
+            $existing  = CartItem::where('user_id', Auth::id())->where('product_id', $productId)->where('variant_id', $variantId)->first();
+            if ($existing) { $existing->increment('qty', $item['qty']); }
+            else { CartItem::create(['user_id' => Auth::id(), 'product_id' => $productId, 'variant_id' => $variantId, 'store_id' => $item['store_id'] ?? null, 'qty' => $item['qty'], 'is_selected' => true]); }
         }
-
         session()->forget('cart');
     }
 
-    // ── PRIVATE HELPERS ───────────────────────────────────────────────────────
-
-    /**
-     * Parse cart key jadi [productId, variantId|null]
-     * Key format: "15" atau "15_3"
-     */
     private function parseKey(string $key): array
     {
-        $parts     = explode('_', $key, 2);
-        $productId = (int) $parts[0];
-        $variantId = isset($parts[1]) ? (int) $parts[1] : null;
-        return [$productId, $variantId];
+        $parts = explode('_', $key, 2);
+        return [(int) $parts[0], isset($parts[1]) ? (int) $parts[1] : null];
     }
 }
