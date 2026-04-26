@@ -9,21 +9,20 @@ use Illuminate\Support\Str;
 
 class CategoryController extends Controller
 {
-    public function index()
-    {
-        // Admin hanya kelola kategori global (store_id null)
-        $categories = Category::whereNull('store_id')
-            ->whereNull('parent_id')
-            ->withCount('products')
-            ->with(['children' => function ($q) {
-                $q->withCount('products')->orderBy('sort');
-            }])
-            ->orderBy('sort')
-            ->get();
+    
+public function index()
+{
+    $categories = Category::whereNull('store_id')
+        ->whereNull('parent_id')
+        ->withCount('products')
+        ->with(['children' => function ($q) {
+            $q->withCount('products')->orderBy('sort');
+        }])
+        ->orderBy('sort')
+        ->get();
 
-        return view('admin.categories.index', compact('categories'));
-    }
-
+    return view('admin.categories.index', compact('categories'));
+}
     public function store(Request $request)
     {
         $request->validate([

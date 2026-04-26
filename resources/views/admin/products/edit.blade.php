@@ -67,17 +67,11 @@ input[type="checkbox"].toggle:checked::after{left:18px;}
         @error('name')<p class="field-error">{{ $message }}</p>@enderror
     </div>
 
-    <div class="form-group">
-        <label class="form-label">Kategori</label>
-        <select name="category_id" class="form-input" style="appearance:none;">
-            <option value="">— Tanpa Kategori —</option>
-            @foreach(\App\Models\Category::active()->orderBy('sort')->get() as $cat)
-            <option value="{{ $cat->id }}" {{ old('category_id', $product->category_id) == $cat->id ? 'selected' : '' }}>
-                {{ $cat->icon ? $cat->icon.' ' : '' }}{{ $cat->name }}
-            </option>
-            @endforeach
-        </select>
-    </div>
+<div class="form-group">
+    <label class="form-label">Kategori</label>
+    @include('admin.products._category_select', ['selectedId' => old('category_id', $product->category_id)])
+    <p class="form-hint">Kategori global — dikelola di menu Kategori.</p>
+</div>
 
     <div class="form-group">
         <label class="form-label">Harga Dasar (Rp) *</label>

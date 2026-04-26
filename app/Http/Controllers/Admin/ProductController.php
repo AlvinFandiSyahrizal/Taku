@@ -18,10 +18,17 @@ class ProductController extends Controller
         return view('admin.products.index', compact('products'));
     }
 
-    public function create()
-    {
-        return view('admin.products.create');
-    }
+public function create()
+{
+    $categories = \App\Models\Category::whereNull('store_id')
+        ->whereNull('parent_id')
+        ->where('is_active', true)
+        ->with(['children' => fn($q) => $q->where('is_active', true)->orderBy('sort')])
+        ->orderBy('sort')
+        ->get();
+
+    return view('admin.products.create', compact('categories'));
+}
 
     public function store(Request $request)
     {
@@ -89,11 +96,19 @@ class ProductController extends Controller
         return redirect()->route('admin.products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
 
-    public function edit(Product $product)
-    {
-        $product->load('images', 'variants');
-        return view('admin.products.edit', compact('product'));
-    }
+public function edit(Product $product)
+{
+    $product->load('images', 'variants');
+
+    $categories = \App\Models\Category::whereNull('store_id')
+        ->whereNull('parent_id')
+        ->where('is_active', true)
+        ->with(['children' => fn($q) => $q->where('is_active', true)->orderBy('sort')])
+        ->orderBy('sort')
+        ->get();
+
+    return view('admin.products.edit', compact('product', 'categories'));
+}
 
     public function update(Request $request, Product $product)
     {

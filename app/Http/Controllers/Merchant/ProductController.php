@@ -27,7 +27,23 @@ class ProductController extends Controller
         return view('merchant.products.index', compact('products', 'store'));
     }
 
-    public function create() { return view('merchant.products.create'); }
+public function create()
+{
+    // Merchant dapat: kategori global (admin) + kategori toko sendiri
+    $storeId = $this->myStore()->id;
+
+    $categories = \App\Models\Category::where(function($q) use ($storeId) {
+            $q->whereNull('store_id')         // global dari admin
+              ->orWhere('store_id', $storeId); // milik toko sendiri
+        })
+        ->whereNull('parent_id')
+        ->where('is_active', true)
+        ->with(['children' => fn($q) => $q->where('is_active', true)->orderBy('sort')])
+        ->orderBy('sort')
+        ->get();
+
+    return view('merchant.products.create', compact('categories'));
+}
 
     public function store(Request $request)
     {
@@ -94,12 +110,25 @@ class ProductController extends Controller
         return redirect()->route('merchant.products.index')->with('success', 'Produk berhasil ditambahkan.');
     }
 
-    public function edit(Product $product)
-    {
-        $this->authorizeProduct($product);
-        $product->load('images', 'variants');
-        return view('merchant.products.edit', compact('product'));
-    }
+public function edit(Product $product)
+{
+    $this->authorizeProduct($product);
+    $product->load('images', 'variants');
+
+    $storeId = $this->myStore()->id;
+
+    $categories = \App\Models\Category::where(function($q) use ($storeId) {
+            $q->whereNull('store_id')
+              ->orWhere('store_id', $storeId);
+        })
+        ->whereNull('parent_id')
+        ->where('is_active', true)
+        ->with(['children' => fn($q) => $q->where('is_active', true)->orderBy('sort')])
+        ->orderBy('sort')
+        ->get();
+
+    return view('merchant.products.edit', compact('product', 'categories'));
+}
 
     public function update(Request $request, Product $product)
     {
