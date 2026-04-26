@@ -9,122 +9,155 @@ use Illuminate\Http\Request;
 
 class ProductController extends Controller
 {
-        public function index(Request $request)
-        {
-            $searchQuery = $request->get('q', '');
+    public function index(Request $request)
+    {
+        $searchQuery = $request->get('q', '');
 
-            $featuredProducts = Product::active()->with('images', 'store', 'category')
-                ->latest()->take(8)->get();
+        if ($searchQuery) {
+            $searchProducts = Product::active()
+                ->with('images', 'store')
+                ->where('name', 'like', "%{$searchQuery}%")
+                ->take(12)->get();
 
-            $categories = Category::active()
-                ->withCount(['products' => fn($q) => $q->active()])
-                ->orderBy('sort')->get();
+            $searchStores = Store::where('status', 'active')
+                ->where('name', 'like', "%{$searchQuery}%")
+                ->take(6)->get();
 
-            $topStores = Store::where('status', 'active')
-                ->withCount(['products' => fn($q) => $q->active()])
-                ->having('products_count', '>', 0)
-                ->orderByDesc('products_count')->take(4)->get();
-
-            $bestSellers = Product::active()->with('images', 'store')
-                ->withCount('orderItems')
-                ->orderByDesc('order_items_count')->take(8)->get();
-
-            $banners = \App\Models\Banner::active()->orderBy('sort')->get();
-
-            $homeSections = \App\Models\HomeSection::active()
-                ->with(['products' => fn($q) => $q->active()->with('images','store')])
-                ->orderBy('sort')->get();
-
-                $officialCount = \App\Models\Product::whereNull('store_id')->where('is_active', true)->count();
-            if ($officialCount > 0) {
-                $officialStore = (object)[
-                    'id'             => null,
-                    'name'           => 'Taku Official',
-                    'description'    => 'Produk kurasi langsung dari tim Taku.',
-                    'logo'           => null,
-                    'slug'           => 'taku-official',  
-                    'products_count' => $officialCount,
-                    'is_official'    => true,
-                ];
-                $topStores = $topStores->prepend($officialStore);
-            }
-
-            if ($searchQuery) {
-                $searchProducts = Product::active()
-                    ->with('images','store')
-                    ->where('name', 'like', "%{$searchQuery}%")
-                    ->take(12)->get();
-
-                $searchStores = Store::where('status','active')
-                    ->where('name', 'like', "%{$searchQuery}%")
-                    ->take(6)->get();
-
-                return view('pages.search-results', compact(
-                    'searchQuery', 'searchProducts', 'searchStores'
-                ));
-            }
-
-            return view('pages.home', compact(
-                'featuredProducts', 'categories', 'topStores',
-                'bestSellers', 'banners', 'homeSections'
+            return view('pages.search-results', compact(
+                'searchQuery', 'searchProducts', 'searchStores'
             ));
         }
 
-        public function shop(Request $request)
-        {
-            $query = Product::active()->with('images', 'store', 'category');
+        // ── Banners ────────────────────────────────────────────────────────
+        $banners = \App\Models\Banner::active()->orderBy('sort')->get();
 
-            if ($request->filled('q')) {
-                $query->where('name', 'like', '%'.$request->q.'%');
-            }
-            if ($request->filled('category')) {
-                $query->whereHas('category', fn($q) => $q->where('slug', $request->category));
-            }
-            if ($request->filled('store')) {
-                $query->whereHas('store', fn($q) => $q->where('slug', $request->store));
-            }
-            if ($request->filled('min_price')) {
-                $query->where('price', '>=', (int) $request->min_price);
-            }
-            if ($request->filled('max_price')) {
-                $query->where('price', '<=', (int) $request->max_price);
-            }
+        // ── Kategori (hanya yang punya produk aktif) ───────────────────────
+        $categories = Category::active()
+            ->whereNull('store_id')        // hanya kategori global
+            ->whereNull('parent_id')       // hanya induk
+            ->withCount(['products' => fn($q) => $q->active()])
+            ->having('products_count', '>', 0)
+            ->orderBy('sort')
+            ->take(12)
+            ->get();
 
-            $sort = $request->get('sort', 'default');
-            match($sort) {
-                'name_az'  => $query->orderBy('name'),
-                'name_za'  => $query->orderBy('name','desc'),
-                'price_lo' => $query->orderBy('price'),
-                'price_hi' => $query->orderBy('price','desc'),
-                default    => $query->latest(),
-            };
+        // ── Produk terlaris (by order count) ──────────────────────────────
+        $bestSellers = Product::active()
+            ->with('images', 'store', 'variants')
+            ->withCount('orderItems')
+            ->orderByDesc('order_items_count')
+            ->take(10)->get();
 
-            $products    = $query->get();
-            $allProducts = Product::active()->get();
-            $categories  = Category::active()->withCount(['products' => fn($q) => $q->active()])->orderBy('sort')->get();
-            $stores      = Store::where('status','active')->withCount(['products' => fn($q) => $q->active()])->having('products_count','>',0)->orderBy('name')->get();
-            $minPossible = $allProducts->min('price') ?? 0;
-            $maxPossible = $allProducts->max('price') ?? 999999999;
+        // ── Produk terbaru ─────────────────────────────────────────────────
+        $newArrivals = Product::active()
+            ->with('images', 'store', 'variants')
+            ->latest()
+            ->take(10)->get();
 
-            return view('pages.Product', [
-                'products'         => $products,
-                'total'            => $products->count(),
-                'sort'             => $sort,
-                'categories'       => $categories,
-                'stores'           => $stores,
-                'selectedCategory' => $request->get('category',''),
-                'selectedStore'    => $request->get('store',''),
-                'minPossible'      => $minPossible,
-                'maxPossible'      => $maxPossible,
-                'minPrice'         => $request->get('min_price', $minPossible),
-                'maxPrice'         => $request->get('max_price', $maxPossible),
-                'q'                => $request->get('q',''),
-            ]);
+        // ── Produk sedang diskon ───────────────────────────────────────────
+        $onSaleProducts = Product::active()
+            ->with('images', 'store', 'variants')
+            ->where('discount_percent', '>', 0)
+            ->orderByDesc('discount_percent')
+            ->take(10)->get();
+
+        // ── Toko terbaik (produk aktif terbanyak) ─────────────────────────
+        $topStores = Store::where('status', 'active')
+            ->withCount(['products' => fn($q) => $q->active()])
+            ->having('products_count', '>', 0)
+            ->orderByDesc('products_count')
+            ->take(6)->get();
+
+        // Prepend Taku Official jika ada produk official
+        $officialCount = Product::whereNull('store_id')->where('is_active', true)->count();
+        if ($officialCount > 0) {
+            $officialStore = (object) [
+                'id'             => null,
+                'name'           => 'Taku Official',
+                'description'    => 'Koleksi tanaman kurasi langsung dari tim Taku.',
+                'logo'           => null,
+                'slug'           => 'taku-official',
+                'products_count' => $officialCount,
+                'is_official'    => true,
+            ];
+            $topStores = $topStores->prepend($officialStore);
         }
 
-public function show($id)
+        // ── Home sections manual dari admin ───────────────────────────────
+        $homeSections = \App\Models\HomeSection::active()
+            ->with(['products' => fn($q) => $q->active()->with('images', 'store', 'variants')])
+            ->orderBy('sort')
+            ->get();
+
+        return view('pages.home', compact(
+            'banners',
+            'categories',
+            'bestSellers',
+            'newArrivals',
+            'onSaleProducts',
+            'topStores',
+            'homeSections'
+        ));
+    }
+
+    public function shop(Request $request)
     {
-        $product = Product::active()->with('images', 'store', 'category')->findOrFail($id);
+        $query = Product::active()->with('images', 'store', 'category', 'variants');
+
+        if ($request->filled('q')) {
+            $query->where('name', 'like', '%' . $request->q . '%');
+        }
+        if ($request->filled('category')) {
+            $query->whereHas('category', fn($q) => $q->where('slug', $request->category));
+        }
+        if ($request->filled('store')) {
+            $query->whereHas('store', fn($q) => $q->where('slug', $request->store));
+        }
+        if ($request->filled('min_price')) {
+            $query->where('price', '>=', (int) $request->min_price);
+        }
+        if ($request->filled('max_price')) {
+            $query->where('price', '<=', (int) $request->max_price);
+        }
+
+        $sort = $request->get('sort', 'default');
+        match ($sort) {
+            'name_az'  => $query->orderBy('name'),
+            'name_za'  => $query->orderBy('name', 'desc'),
+            'price_lo' => $query->orderBy('price'),
+            'price_hi' => $query->orderBy('price', 'desc'),
+            default    => $query->latest(),
+        };
+
+        $products    = $query->get();
+        $allProducts = Product::active()->get();
+        $categories  = Category::active()
+            ->withCount(['products' => fn($q) => $q->active()])
+            ->orderBy('sort')->get();
+        $stores = Store::where('status', 'active')
+            ->withCount(['products' => fn($q) => $q->active()])
+            ->having('products_count', '>', 0)
+            ->orderBy('name')->get();
+
+        return view('pages.Product', [
+            'products'         => $products,
+            'total'            => $products->count(),
+            'sort'             => $sort,
+            'categories'       => $categories,
+            'stores'           => $stores,
+            'selectedCategory' => $request->get('category', ''),
+            'selectedStore'    => $request->get('store', ''),
+            'minPossible'      => $allProducts->min('price') ?? 0,
+            'maxPossible'      => $allProducts->max('price') ?? 999999999,
+            'minPrice'         => $request->get('min_price', $allProducts->min('price') ?? 0),
+            'maxPrice'         => $request->get('max_price', $allProducts->max('price') ?? 999999999),
+            'q'                => $request->get('q', ''),
+        ]);
+    }
+
+    public function show($id)
+    {
+        $product = Product::active()->with('images', 'store', 'category', 'variants')->findOrFail($id);
 
         $storeProducts = collect();
         if ($product->store_id) {
@@ -160,38 +193,37 @@ public function show($id)
 
         return view('pages.product-detail', [
             'product'       => $product,
-            'storeProducts' => $storeProducts,   
-            'products'      => $others,          
+            'storeProducts' => $storeProducts,
+            'products'      => $others,
             'isWishlisted'  => $isWishlisted,
         ]);
     }
 
-        public function toggle(Product $product)
-        {
-            if (!auth()->check()) {
-                return response()->json(['status' => 'unauthenticated'], 401);
-            }
-
-            $user = auth()->user();
-
-            $exists = $user->wishlist()->where('product_id', $product->id)->exists();
-
-            if ($exists) {
-                $user->wishlist()->detach($product->id);
-                $status = 'removed';
-            } else {
-                $user->wishlist()->attach($product->id);
-                $status = 'added';
-            }
-
-            if (request()->expectsJson()) {
-                return response()->json([
-                    'status' => $status,
-                    'count'  => $user->wishlist()->count()
-                ]);
-            }
-
-            return back();
+    public function toggle(Product $product)
+    {
+        if (!auth()->check()) {
+            return response()->json(['status' => 'unauthenticated'], 401);
         }
 
+        $user   = auth()->user();
+        $exists = $user->wishlist()->where('product_id', $product->id)->exists();
+
+        if ($exists) {
+            $user->wishlist()->detach($product->id);
+            $status = 'removed';
+        } else {
+            $user->wishlist()->attach($product->id);
+            $status = 'added';
+        }
+
+        if (request()->expectsJson()) {
+            return response()->json([
+                'status' => $status,
+                'count'  => $user->wishlist()->count(),
+            ]);
+        }
+
+        return back();
+    }
 }
+

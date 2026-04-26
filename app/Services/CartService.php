@@ -33,6 +33,10 @@ class CartService
                 ? true
                 : $item->product->store?->status === 'active';
 
+            // Deteksi item "stale": variant_id null tapi produk sekarang sudah punya variant
+            $productHasVariants    = $item->product->variants->isNotEmpty();
+            $needsVariantSelection = ($item->variant_id === null && $productHasVariants);
+
             if ($item->variant) {
                 $finalPrice    = $item->variant->getFinalPrice();
                 $originalPrice = $item->variant->price;
@@ -42,12 +46,13 @@ class CartService
             } else {
                 $finalPrice    = $item->product->getFinalPrice();
                 $originalPrice = $item->product->price;
-                $stock         = $item->product->stock ?? 0;
+                // Stale item dianggap stok 0 agar tidak bisa checkout
+                $stock         = $needsVariantSelection ? 0 : ($item->product->stock ?? 0);
                 $discPct       = $item->product->discount_percent ?? 0;
                 $variantLabel  = null;
             }
 
-            // Semua variant produk ini untuk dropdown di cart
+            // Semua variant produk untuk chip selector di cart
             $allVariants = $item->product->variants->map(fn($v) => [
                 'id'               => $v->id,
                 'label'            => $v->getLabel(),
@@ -55,29 +60,41 @@ class CartService
                 'final_price'      => $v->getFinalPrice(),
                 'discount_percent' => $v->discount_percent,
                 'stock'            => $v->stock,
-            ])->toArray();
+            ])->values()->toArray();
+
+            // Ukuran tunggal (bukan variant) — tampil sebagai badge info di cart
+            $singleSizeLabel = null;
+            if (!$productHasVariants) {
+                $parts = [];
+                if ($item->product->getHeightLabel())  $parts[] = 'Tinggi ' . $item->product->getHeightLabel();
+                if ($item->product->getDiameterLabel()) $parts[] = 'Ø ' . $item->product->getDiameterLabel();
+                $singleSizeLabel = $parts ? implode(' · ', $parts) : null;
+            }
 
             $key = $this->makeKey($item->product_id, $item->variant_id);
 
             $cart[$key] = [
-                'product_id'      => $item->product_id,
-                'variant_id'      => $item->variant_id,
-                'variant_label'   => $variantLabel,
-                'all_variants'    => $allVariants,   // ← BARU
-                'discount_pct'    => $discPct,
-                'discount_percent'=> $discPct,
-                'store_id'        => $item->product->store_id,
-                'store_name'      => $item->product->store?->name ?? 'Taku Official',
-                'store_slug'      => $item->product->store?->slug ?? null,
-                'name'            => $item->product->name,
-                'price'           => $finalPrice,
-                'original_price'  => $originalPrice,
-                'image'           => $item->product->image,
-                'qty'             => $item->qty,
-                'is_selected'     => (bool) $item->is_selected,
-                'stock'           => $stock,
-                'is_active'       => (bool) $item->product->is_active,
-                'store_is_active' => $storeIsActive,
+                'product_id'              => $item->product_id,
+                'variant_id'              => $item->variant_id,
+                'variant_label'           => $variantLabel,
+                'all_variants'            => $allVariants,
+                'single_size_label'       => $singleSizeLabel,
+                'needs_variant_selection' => $needsVariantSelection,
+                'discount_pct'            => $discPct,
+                'discount_percent'        => $discPct,
+                'store_id'                => $item->product->store_id,
+                'store_name'              => $item->product->store?->name ?? 'Taku Official',
+                'store_slug'              => $item->product->store?->slug ?? null,
+                'name'                    => $item->product->name,
+                'price'                   => $finalPrice,
+                'original_price'          => $originalPrice,
+                'image'                   => $item->product->image,
+                'qty'                     => $item->qty,
+                // Stale item tidak boleh terselect
+                'is_selected'             => $needsVariantSelection ? false : (bool) $item->is_selected,
+                'stock'                   => $stock,
+                'is_active'               => (bool) $item->product->is_active,
+                'store_is_active'         => $storeIsActive,
             ];
         }
         return $cart;
@@ -168,23 +185,25 @@ class CartService
                 $cart[$key]['qty'] += $qty;
             } else {
                 $cart[$key] = [
-                    'product_id'       => $productId,
-                    'variant_id'       => $variantId,
-                    'variant_label'    => $variantLabel,
-                    'all_variants'     => [],   // session cart tidak simpan all_variants (diload saat login)
-                    'discount_pct'     => $discPct,
-                    'discount_percent' => $discPct,
-                    'store_id'         => $storeId,
-                    'store_name'       => $storeName,
-                    'store_slug'       => $storeSlug,
-                    'name'             => $product->name,
-                    'price'            => $finalPrice,
-                    'original_price'   => $origPrice,
-                    'image'            => $product->image,
-                    'qty'              => $qty,
-                    'stock'            => $stock,
-                    'is_active'        => $product->is_active,
-                    'store_is_active'  => $product->store?->status === 'active',
+                    'product_id'              => $productId,
+                    'variant_id'              => $variantId,
+                    'variant_label'           => $variantLabel,
+                    'all_variants'            => [],
+                    'single_size_label'       => null,
+                    'needs_variant_selection' => false,
+                    'discount_pct'            => $discPct,
+                    'discount_percent'        => $discPct,
+                    'store_id'                => $storeId,
+                    'store_name'              => $storeName,
+                    'store_slug'              => $storeSlug,
+                    'name'                    => $product->name,
+                    'price'                   => $finalPrice,
+                    'original_price'          => $origPrice,
+                    'image'                   => $product->image,
+                    'qty'                     => $qty,
+                    'stock'                   => $stock,
+                    'is_active'               => $product->is_active,
+                    'store_is_active'         => $product->store?->status === 'active',
                 ];
             }
 
