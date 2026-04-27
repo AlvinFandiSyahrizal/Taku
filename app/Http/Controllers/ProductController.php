@@ -83,7 +83,7 @@ class ProductController extends Controller
             $topStores = $topStores->prepend($officialStore);
         }
 
-        // ── Home sections manual dari admin ───────────────────────────────
+        // ── Home sections manual dari admin 
         $homeSections = \App\Models\HomeSection::active()
             ->with(['products' => fn($q) => $q->active()->with('images', 'store', 'variants')])
             ->orderBy('sort')
@@ -155,49 +155,57 @@ class ProductController extends Controller
         ]);
     }
 
-    public function show($id)
-    {
-        $product = Product::active()->with('images', 'store', 'category', 'variants')->findOrFail($id);
+public function show($slug)
+{
+    $product = Product::active()
+        ->with('images', 'store', 'category', 'variants')
+        ->where('slug', $slug)
+        ->firstOrFail();
 
-        $storeProducts = collect();
-        if ($product->store_id) {
-            $storeProducts = Product::active()->with('images')
-                ->where('id', '!=', $id)
-                ->where('store_id', $product->store_id)
-                ->latest()->take(12)->get();
-        } else {
-            $storeProducts = Product::active()->with('images')
-                ->where('id', '!=', $id)
-                ->whereNull('store_id')
-                ->latest()->take(12)->get();
-        }
+    $id = $product->id;
 
-        $storeProductIds = $storeProducts->pluck('id')->push($id);
+    if ($product->store_id) {
+        $storeProducts = Product::active()->with('images')
+            ->where('id', '!=', $id)
+            ->where('store_id', $product->store_id)
+            ->latest()->take(12)->get();
+    } else {
+        $storeProducts = Product::active()->with('images')
+            ->where('id', '!=', $id)
+            ->whereNull('store_id')
+            ->latest()->take(12)->get();
+    }
 
+    $storeProductIds = $storeProducts->pluck('id')->push($id);
+
+    $others = Product::active()->with('images', 'store')
+        ->whereNotIn('id', $storeProductIds)
+        ->when($product->category_id, fn($q) =>
+            $q->where('category_id', $product->category_id)
+        )
+        ->latest()->take(12)->get();
+
+    if ($others->count() < 3) {
         $others = Product::active()->with('images', 'store')
             ->whereNotIn('id', $storeProductIds)
-            ->when($product->category_id, fn($q) => $q->where('category_id', $product->category_id))
             ->latest()->take(12)->get();
-
-        if ($others->count() < 3) {
-            $others = Product::active()->with('images', 'store')
-                ->whereNotIn('id', $storeProductIds)
-                ->latest()->take(12)->get();
-        }
-
-        $isWishlisted = false;
-        if (auth()->check()) {
-            $isWishlisted = \App\Models\Wishlist::where('user_id', auth()->id())
-                ->where('product_id', $id)->exists();
-        }
-
-        return view('pages.product-detail', [
-            'product'       => $product,
-            'storeProducts' => $storeProducts,
-            'products'      => $others,
-            'isWishlisted'  => $isWishlisted,
-        ]);
     }
+
+    $isWishlisted = false;
+
+    if (auth()->check()) {
+        $isWishlisted = \App\Models\Wishlist::where('user_id', auth()->id())
+            ->where('product_id', $id)
+            ->exists();
+    }
+
+    return view('pages.product-detail', compact(
+        'product',
+        'storeProducts',
+        'others',
+        'isWishlisted'
+    ));
+}
 
     public function toggle(Product $product)
     {

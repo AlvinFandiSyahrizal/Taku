@@ -178,7 +178,7 @@
         @if($section->rows === 1)
         <div class="snap-slider" onmousedown="sliderDrag(this,event)">
             @foreach($section->products as $product)
-            <a href="{{ route('product.show', $product->id) }}" class="prod-card" style="width:200px;">
+            <a href="{{ route('product.show', $product->slug) }}" class="prod-card" style="width:200px;">
                 <img src="{{ asset($product->image ?? 'images/placeholder.jpg') }}" class="prod-card-img" alt="{{ $product->name }}" onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
                 <div class="prod-card-info">
                     @if($product->category)<p class="prod-card-cat">{{ $product->category->name }}</p>@endif
@@ -194,7 +194,7 @@
         @else
         <div class="{{ $section->rows === 2 ? 'prod-grid-2' : 'prod-grid-3' }}">
             @foreach($section->products as $product)
-            <a href="{{ route('product.show', $product->id) }}" class="prod-card">
+            <a href="{{ route('product.show', $product->slug) }}" class="prod-card">
                 <img src="{{ asset($product->image ?? 'images/placeholder.jpg') }}" class="prod-card-img" alt="{{ $product->name }}" onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
                 <div class="prod-card-info">
                     @if($product->category)<p class="prod-card-cat">{{ $product->category->name }}</p>@endif
@@ -307,7 +307,7 @@
             @if($products->count() > 0)
             <div class="prod-grid" id="prodGrid">
                 @foreach($products as $product)
-                <a href="{{ route('product.show', $product->id) }}" class="prod-card">
+                <a href="{{ route('product.show', $product->slug) }}" class="prod-card">
                     <img src="{{ asset($product->image ?? 'images/placeholder.jpg') }}" class="prod-card-img" alt="{{ $product->name }}" onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
                     <div class="prod-card-info">
                         @if($product->category)<p class="prod-card-cat">{{ $product->category->name }}</p>@endif

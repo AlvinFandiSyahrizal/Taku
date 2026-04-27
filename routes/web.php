@@ -51,7 +51,7 @@ Route::get('/sitemap.xml', function () {
 
     \App\Models\Product::where('is_active', true)->get()
         ->each(fn($p) => $sitemap->add(
-            \Spatie\Sitemap\Tags\Url::create('/product/' . $p->id)
+            \Spatie\Sitemap\Tags\Url::create('/product/' . $p->slug)
                 ->setPriority(0.8)
                 ->setChangeFrequency('weekly')
                 ->setLastModificationDate($p->updated_at)
@@ -74,7 +74,7 @@ Route::get('/lang/{lang}', [LanguageController::class, 'switch'])->name('lang.sw
 // ── Public
 Route::get('/', [ProductController::class, 'index'])->name('home');
 Route::get('/products', [ProductController::class, 'shop'])->name('products');
-Route::get('/product/{id}', [ProductController::class, 'show'])->name('product.show');
+Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
 
 Route::get('/toko/taku-official', [StoreController::class, 'showOfficial'])->name('store.official');
 Route::get('/toko/{slug}', [StoreController::class, 'show'])->name('store.show');

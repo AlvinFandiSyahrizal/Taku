@@ -9,6 +9,8 @@ use App\Models\Product;
 use App\Models\Category;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Str;
+
 
 class StoreController extends Controller
 {
@@ -61,6 +63,7 @@ class StoreController extends Controller
         Store::create([
             'user_id'      => Auth::id(),
             'name'         => $request->name,
+            'slug'         => $this->generateStoreSlug($request->name),
             'description'  => $request->description,
             'phone'        => $request->phone,
             'city'         => $request->regency_name ?: $request->city,
@@ -279,4 +282,22 @@ class StoreController extends Controller
             'officialPhone'
         ));
     }
+
+    private function generateStoreSlug(string $name, ?int $excludeId = null): string
+{
+    $base = Str::slug($name);
+    $slug = $base;
+    $i    = 1;
+
+    while (true) {
+        $query = Store::where('slug', $slug);
+        if ($excludeId) $query->where('id', '!=', $excludeId);
+        if (!$query->exists()) break;
+        $slug = $base . '-' . $i;
+        $i++;
+    }
+
+    return $slug;
+}
+
 }

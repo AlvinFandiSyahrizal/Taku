@@ -14,7 +14,7 @@
         : null;
 @endphp
 
-<a href="{{ route('product.show', $product->id) }}"
+<a href="{{ route('product.show', $product->slug) }}"
    style="display:block;flex-shrink:0;width:{{ $cardWidth }};scroll-snap-align:start;border-radius:14px;overflow:hidden;border:.5px solid rgba(11,42,74,.08);background:white;text-decoration:none;color:inherit;transition:transform .25s,box-shadow .25s;"
    onmouseover="this.style.transform='translateY(-4px)';this.style.boxShadow='0 10px 28px rgba(11,42,74,.1)'"
    onmouseout="this.style.transform='';this.style.boxShadow=''">

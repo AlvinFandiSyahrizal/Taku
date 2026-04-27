@@ -75,6 +75,7 @@ class CartService
 
             $cart[$key] = [
                 'product_id'              => $item->product_id,
+                'slug'                    => $item->product->slug,
                 'variant_id'              => $item->variant_id,
                 'variant_label'           => $variantLabel,
                 'all_variants'            => $allVariants,
@@ -186,6 +187,7 @@ class CartService
             } else {
                 $cart[$key] = [
                     'product_id'              => $productId,
+                    'slug'                    => $product->slug,
                     'variant_id'              => $variantId,
                     'variant_label'           => $variantLabel,
                     'all_variants'            => [],

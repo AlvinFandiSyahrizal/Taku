@@ -66,7 +66,7 @@ public function create()
 
         $product = Product::create([
             'name'             => $request->name,
-            'slug'             => Str::slug($request->name) . '-' . time(),
+            'slug'             => $this->generateProductSlug($request->name),
             'price'            => $request->price,
             'desc_id'          => $request->desc_id,
             'desc_en'          => $request->desc_en,
@@ -148,7 +148,7 @@ public function edit(Product $product)
 
         $product->update([
             'name'             => $request->name,
-            'slug'             => Str::slug($request->name) . '-' . $product->id,
+            'slug'             => $this->generateProductSlug($request->name, $product->id),
             'price'            => $request->price,
             'desc_id'          => $request->desc_id,
             'desc_en'          => $request->desc_en,
@@ -230,4 +230,22 @@ public function edit(Product $product)
 
         $product->variants()->whereNotIn('id', $incomingIds)->delete();
     }
+
+    private function generateProductSlug(string $name, ?int $excludeId = null): string
+{
+    $base = Str::slug($name);
+    $slug = $base;
+    $i    = 1;
+
+    while (true) {
+        $query = \App\Models\Product::where('slug', $slug);
+        if ($excludeId) $query->where('id', '!=', $excludeId);
+        if (!$query->exists()) break;
+        $slug = $base . '-' . $i;
+        $i++;
+    }
+
+    return $slug;
+}
+
 }

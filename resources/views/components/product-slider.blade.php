@@ -9,7 +9,7 @@ $autoSlide  = $autoSlide ?? false;
     <div class="slider-viewport">
         <div class="slider-track" id="track-{{ $sid }}" style="gap:{{ $gap }}px;">
             @foreach($products as $product)
-            <a href="{{ route('product.show', $product->id) }}"
+            <a href="{{ route('product.show', $product->slug) }}"
                class="prod-card"
                style="width:{{ $cw }}px;">
                 <img src="{{ asset($product->image ?? 'images/placeholder.jpg') }}"

@@ -416,7 +416,7 @@ const VARIANTS_DATA = {
             <div class="slider-track" id="sliderStore">
                 @foreach($storeProducts as $item)
                 @php $itemImg = $item->image ?? ($item->images->first()->image ?? null); $stockOut = $item->stock === 0; @endphp
-                <a href="{{ route('product.show', $item->id) }}" class="slider-card">
+                <a href="{{ route('product.show', $item->slug) }}" class="slider-card">
                     <div class="slider-card-img-wrap">
                         @if($itemImg)
                             <img src="{{ asset($itemImg) }}" class="slider-card-img" alt="{{ $item->name }}"
@@ -458,7 +458,7 @@ const VARIANTS_DATA = {
             <div class="slider-track" id="sliderOthers">
                 @foreach($products as $item)
                 @php $itemImg = $item->image ?? ($item->images->first()->image ?? null); $stockOut = $item->stock === 0; @endphp
-                <a href="{{ route('product.show', $item->id) }}" class="slider-card">
+                <a href="{{ route('product.show', $item->slug) }}" class="slider-card">
                     <div class="slider-card-img-wrap">
                         @if($itemImg)
                             <img src="{{ asset($itemImg) }}" class="slider-card-img" alt="{{ $item->name }}"

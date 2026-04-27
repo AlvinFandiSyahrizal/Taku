@@ -85,13 +85,7 @@
 .price-original{font-size:11px;color:rgba(11,42,74,.3);text-decoration:line-through;white-space:nowrap;}
 .price-disc-tag{display:inline-block;font-size:9px;background:var(--danger-soft);color:var(--danger);padding:1px 5px;border-radius:100px;margin-top:2px;}
 
-/* ── Stale badge ── */
-.stale-badge{
-    display:inline-flex;align-items:center;gap:4px;
-    background:var(--warning-soft);border:.5px solid rgba(230,126,34,.3);
-    border-radius:100px;padding:2px 8px;font-size:10px;color:var(--warning);
-    font-weight:500;margin-top:4px;cursor:pointer;transition:background .15s;
-}
+.stale-badge{display:inline-flex;align-items:center;gap:4px;background:var(--warning-soft);border:.5px solid rgba(230,126,34,.3);border-radius:100px;padding:2px 8px;font-size:10px;color:var(--warning);font-weight:500;margin-top:4px;cursor:pointer;transition:background .15s;}
 .stale-badge:hover{background:rgba(230,126,34,.15);}
 .stale-badge svg{flex-shrink:0;}
 
@@ -106,37 +100,40 @@
 .vp-trigger:hover{border-color:var(--gold);background:var(--gold-soft);}
 .vp-trigger.has-variant{border-color:var(--gold-border);background:var(--gold-soft);}
 .vp-trigger.needs-pick{border-color:rgba(230,126,34,.5);background:var(--warning-soft);color:var(--warning);}
-.vp-trigger.vp-open .vp-trigger-arrow{transform:rotate(180deg);}
 .vp-trigger-label{flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
 .vp-trigger-arrow{font-size:9px;opacity:.5;flex-shrink:0;transition:transform .18s;}
 .vp-disc-pill{background:var(--danger);color:white;font-size:8px;font-weight:600;padding:1px 4px;border-radius:100px;flex-shrink:0;}
 
-.single-size-badge{
-    display:inline-flex;align-items:center;gap:5px;
-    background:rgba(74,82,64,.07);border:.5px solid rgba(74,82,64,.18);
-    border-radius:100px;padding:4px 10px;font-size:11px;color:var(--olive);white-space:nowrap;
-}
+.single-size-badge{display:inline-flex;align-items:center;gap:5px;background:rgba(74,82,64,.07);border:.5px solid rgba(74,82,64,.18);border-radius:100px;padding:4px 10px;font-size:11px;color:var(--olive);white-space:nowrap;}
 
-/* ── Popover ── */
+/* ══════════════════════════════════════════════════════
+   POPOVER FIX — pakai position:fixed + JS positioning
+   Ini solusi untuk bug "popover terpotong di dalam tabel"
+   karena table cell tidak bisa jadi positioned ancestor
+   yang benar untuk absolute children
+══════════════════════════════════════════════════════ */
 .vp-popover{
-    position:absolute;top:calc(100% + 6px);left:0;z-index:200;
-    background:white;border:.5px solid rgba(11,42,74,.12);border-radius:12px;
-    padding:12px;box-shadow:0 8px 32px rgba(11,42,74,.12);
-    min-width:220px;max-width:320px;
-    display:none;
+    position:fixed;          /* ← FIX: fixed bukan absolute */
+    z-index:9990;
+    background:white;
+    border:.5px solid rgba(11,42,74,.12);
+    border-radius:12px;
+    padding:12px;
+    box-shadow:0 8px 32px rgba(11,42,74,.12);
+    min-width:220px;
+    max-width:320px;
+    display:none;            /* hidden by default */
 }
-.vp-popover.vp-open{display:block;animation:vpPopIn .15s ease;}
+.vp-popover.vp-open{
+    display:block;
+    animation:vpPopIn .15s ease;
+}
 @keyframes vpPopIn{from{opacity:0;transform:translateY(-4px);}to{opacity:1;transform:translateY(0);}}
 .vp-popover-title{font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:rgba(11,42,74,.35);margin-bottom:10px;padding-bottom:8px;border-bottom:.5px solid rgba(11,42,74,.06);}
 .vp-chips{display:flex;flex-wrap:wrap;gap:6px;}
 
 /* Chip */
-.vc-chip{
-    display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;
-    padding:6px 10px;border:.5px solid rgba(11,42,74,.18);border-radius:8px;
-    background:white;cursor:pointer;font-family:'DM Sans',sans-serif;
-    transition:all .15s;position:relative;min-width:80px;text-align:left;
-}
+.vc-chip{display:inline-flex;flex-direction:column;align-items:flex-start;gap:1px;padding:6px 10px;border:.5px solid rgba(11,42,74,.18);border-radius:8px;background:white;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all .15s;position:relative;min-width:80px;text-align:left;}
 .vc-chip:hover:not(.vc-chip-out){border-color:var(--gold);background:var(--gold-soft);}
 .vc-chip-active{border-color:var(--gold);background:var(--gold-soft);box-shadow:0 0 0 1px var(--gold);}
 .vc-chip-out{opacity:.4;cursor:not-allowed;background:#f7f7f7;border-style:dashed;}
@@ -149,7 +146,8 @@
 .vc-chip-out-lbl{font-size:9px;color:var(--danger);line-height:1.2;}
 .vc-disc-badge{position:absolute;top:-6px;right:-6px;background:var(--danger);color:white;font-size:8px;font-weight:600;padding:1px 4px;border-radius:100px;}
 
-.vp-wrap{position:relative;display:inline-block;}
+/* vp-wrap tidak perlu position:relative lagi karena popover pakai fixed */
+.vp-wrap{display:inline-block;}
 
 .cart-qty-wrap{display:inline-flex;align-items:center;border:.5px solid rgba(11,42,74,.18);border-radius:8px;overflow:hidden;}
 .cart-qty-btn{background:none;border:none;cursor:pointer;width:30px;height:30px;font-size:16px;color:var(--navy);display:flex;align-items:center;justify-content:center;transition:all .15s;flex-shrink:0;}
@@ -226,22 +224,49 @@
         <button type="button" class="btn-del-sel" id="btnDelSelected" onclick="deleteSelected()">Hapus yang Dipilih</button>
     </div>
 
-    <div id="cartItems">
-    @foreach($grouped as $storeKey => $group)
-    <div class="store-group">
-        <div class="store-group-header">
-            <input type="checkbox" class="store-group-check store-check" data-store="{{ $storeKey }}"
-                onchange="toggleStore('{{ $storeKey }}', this.checked)">
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(11,42,74,.45)" stroke-width="1.5" style="flex-shrink:0;"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
-            @if($group['store_slug'] ?? null)
-                <a href="{{ route('store.show', $group['store_slug']) }}" class="store-group-name">{{ $group['store_name'] }}</a>
-            @else
-                <span class="store-group-name" style="cursor:default;">{{ $group['store_name'] }}</span>
-            @endif
-            <span class="store-group-badge">{{ count($group['items']) }} produk</span>
-            <button type="button" class="store-toggle" onclick="toggleStoreCollapse(this)">▾</button>
-        </div>
+<div id="cartItems">
+@foreach($grouped as $storeKey => $group)
+<div class="store-group">
+    <div class="store-group-header">
 
+        <input type="checkbox"
+            class="store-group-check store-check"
+            data-store="{{ $storeKey }}"
+            onchange="toggleStore('{{ $storeKey }}', this.checked)">
+
+        {{-- ICON TOKO --}}
+        <a href="{{ ($group['store_slug'] ?? null) ? route('store.show', $group['store_slug']) : url('/toko/taku-official') }}"
+           class="store-icon-link">
+
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+                stroke="rgba(11,42,74,.45)" stroke-width="1.5"
+                style="flex-shrink:0;">
+                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+            </svg>
+
+        </a>
+
+        {{-- NAMA TOKO --}}
+        <a href="{{ ($group['store_slug'] ?? null) ? route('store.show', $group['store_slug']) : url('/toko/taku-official') }}"
+           class="store-group-name">
+
+            {{ $group['store_name'] }}
+
+        </a>
+
+        <span class="store-group-badge">
+            {{ count($group['items']) }} produk
+        </span>
+
+        <button type="button"
+            class="store-toggle"
+            onclick="toggleStoreCollapse(this)">
+            ▾
+        </button>
+
+    </div>
+    
         {{-- ── DESKTOP ── --}}
         <table class="cart-table cart-desktop">
             <thead>
@@ -289,20 +314,20 @@
                 </td>
                 <td>
                     <div class="cart-product">
-                        <a href="{{ route('product.show', $productId) }}">
+                        <a href="{{ route('product.show', $item['slug'] ?? $productId) }}">
                             <img src="{{ asset($item['image'] ?? 'images/placeholder.jpg') }}"
                                  class="cart-product-img" alt="{{ $item['name'] }}"
                                  style="{{ $stockOut && !$needsVariant ? 'opacity:.4;' : '' }}"
                                  onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
                         </a>
                         <div style="min-width:0;">
-                            <a href="{{ route('product.show', $productId) }}" class="cart-product-name">{{ $item['name'] }}</a>
+                            <a href="{{ route('product.show', $item['slug'] ?? $productId) }}" class="cart-product-name">{{ $item['name'] }}</a>
                             @if($stockOut && !$needsVariant)
                                 <span class="stock-out-badge">Stok Habis</span>
                             @endif
                             @if($needsVariant)
                                 <div>
-                                    <span class="stale-badge" onclick="vpOpen('vp-{{ $cartKey }}', document.getElementById('vp-trigger-{{ $cartKey }}'))">
+                                    <span class="stale-badge" onclick="vpToggle('vp-{{ $cartKey }}', document.getElementById('vp-trigger-{{ $cartKey }}'))">
                                         <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                                         Pilih ukuran dulu
                                     </span>
@@ -323,44 +348,17 @@
                 </td>
                 <td>
                     @if($hasChips)
+                    {{-- Trigger button saja di sini, popover di-render di luar tabel --}}
                     <div class="vp-wrap" id="vp-wrap-{{ $cartKey }}">
                         <button type="button"
                                 class="vp-trigger {{ $variantId && !$needsVariant ? 'has-variant' : '' }} {{ $needsVariant ? 'needs-pick' : '' }}"
                                 id="vp-trigger-{{ $cartKey }}"
+                                data-pop="vp-{{ $cartKey }}"
                                 onclick="vpToggle('vp-{{ $cartKey }}', this)">
                             @if($pillDisc > 0)<span class="vp-disc-pill">-{{ $pillDisc }}%</span>@endif
                             <span class="vp-trigger-label">{{ $pillLabel ?? 'Pilih Ukuran' }}</span>
                             <span class="vp-trigger-arrow">▾</span>
                         </button>
-                        <div class="vp-popover" id="vp-{{ $cartKey }}">
-                            <p class="vp-popover-title">Pilih Ukuran</p>
-                            <div class="vp-chips">
-                                @foreach($allVariants as $av)
-                                @php
-                                    $avOut=$av['stock']==0;
-                                    $avActive=$av['id']==$variantId&&!$needsVariant;
-                                    $avHasDisc=$av['discount_percent']>0;
-                                @endphp
-                                <button type="button"
-                                        class="vc-chip {{ $avActive?'vc-chip-active':'' }} {{ $avOut?'vc-chip-out':'' }}"
-                                        data-variant-id="{{ $av['id'] }}"
-                                        data-price="{{ $av['final_price'] }}"
-                                        data-original="{{ $av['price'] }}"
-                                        data-discount="{{ $av['discount_percent'] }}"
-                                        data-stock="{{ $av['stock'] }}"
-                                        data-label="{{ $av['label'] }}"
-                                        {{ $avOut?'disabled':'' }}
-                                        onclick="selectChip('{{ $cartKey }}', {{ $productId }}, this)">
-                                    @if($avHasDisc)<span class="vc-disc-badge">-{{ $av['discount_percent'] }}%</span>@endif
-                                    <span class="vc-chip-label">{{ $av['label'] }}</span>
-                                    <span class="vc-chip-price {{ $avHasDisc?'has-disc':'' }}">Rp {{ number_format($av['final_price'],0,',','.') }}</span>
-                                    @if($avHasDisc)<span class="vc-chip-orig">Rp {{ number_format($av['price'],0,',','.') }}</span>@endif
-                                    @if($avOut)<span class="vc-chip-out-lbl">Habis</span>
-                                    @elseif($av['stock']<=5&&$av['stock']>0)<span class="vc-chip-stock">Sisa {{ $av['stock'] }}</span>@endif
-                                </button>
-                                @endforeach
-                            </div>
-                        </div>
                     </div>
                     @elseif($singleSize)
                     <span class="single-size-badge">{{ $singleSize }}</span>
@@ -425,13 +423,13 @@
                            {{ $isSelected&&!$rowDisabled?'checked':'' }}
                            {{ $rowDisabled?'disabled':'' }}
                            onchange="onItemCheck(this, '{{ $cartKey }}')">
-                    <a href="{{ route('product.show', $productId) }}">
+                    <a href="{{ route('product.show', $item['slug'] ?? $productId) }}">
                         <img src="{{ asset($item['image'] ?? 'images/placeholder.jpg') }}"
                              class="cart-card-img" alt="{{ $item['name'] }}"
                              onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
                     </a>
                     <div class="cart-card-info">
-                        <a href="{{ route('product.show', $productId) }}" class="cart-product-name">{{ $item['name'] }}</a>
+                        <a href="{{ route('product.show', $item['slug'] ?? $productId) }}" class="cart-product-name">{{ $item['name'] }}</a>
                         @if(!$needsVariant&&!$stockOut)
                             <p class="price-final {{ $hasDiscount?'discounted':'' }}" style="margin-top:2px;" id="price-m-{{ $cartKey }}">Rp {{ number_format($finalPrice,0,',','.') }}</p>
                             @if($hasDiscount)<p class="price-original" id="orig-m-{{ $cartKey }}">Rp {{ number_format($origPrice,0,',','.') }}</p>@endif
@@ -439,7 +437,7 @@
                         @if($stockOut&&!$needsVariant)<span class="stock-out-badge">Stok Habis</span>@endif
                         @if($needsVariant)
                             <span class="stale-badge" style="margin-top:4px;"
-                                  onclick="vpOpen('vp-m-{{ $cartKey }}', document.getElementById('vp-trigger-m-{{ $cartKey }}'))">
+                                  onclick="vpToggle('vp-m-{{ $cartKey }}', document.getElementById('vp-trigger-m-{{ $cartKey }}'))">
                                 <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
                                 Pilih ukuran dulu
                             </span>
@@ -449,36 +447,12 @@
                             <button type="button"
                                     class="vp-trigger {{ $variantId&&!$needsVariant?'has-variant':'' }} {{ $needsVariant?'needs-pick':'' }}"
                                     id="vp-trigger-m-{{ $cartKey }}"
+                                    data-pop="vp-m-{{ $cartKey }}"
                                     onclick="vpToggle('vp-m-{{ $cartKey }}', this)">
                                 @if($pillDisc>0)<span class="vp-disc-pill">-{{ $pillDisc }}%</span>@endif
                                 <span class="vp-trigger-label">{{ $pillLabel ?? 'Pilih Ukuran' }}</span>
                                 <span class="vp-trigger-arrow">▾</span>
                             </button>
-                            <div class="vp-popover" id="vp-m-{{ $cartKey }}">
-                                <p class="vp-popover-title">Pilih Ukuran</p>
-                                <div class="vp-chips">
-                                    @foreach($allVariants as $av)
-                                    @php $avOut=$av['stock']==0;$avActive=$av['id']==$variantId&&!$needsVariant;$avHasDisc=$av['discount_percent']>0; @endphp
-                                    <button type="button"
-                                            class="vc-chip {{ $avActive?'vc-chip-active':'' }} {{ $avOut?'vc-chip-out':'' }}"
-                                            data-variant-id="{{ $av['id'] }}"
-                                            data-price="{{ $av['final_price'] }}"
-                                            data-original="{{ $av['price'] }}"
-                                            data-discount="{{ $av['discount_percent'] }}"
-                                            data-stock="{{ $av['stock'] }}"
-                                            data-label="{{ $av['label'] }}"
-                                            {{ $avOut?'disabled':'' }}
-                                            onclick="selectChip('{{ $cartKey }}', {{ $productId }}, this)">
-                                        @if($avHasDisc)<span class="vc-disc-badge">-{{ $av['discount_percent'] }}%</span>@endif
-                                        <span class="vc-chip-label">{{ $av['label'] }}</span>
-                                        <span class="vc-chip-price {{ $avHasDisc?'has-disc':'' }}">Rp {{ number_format($av['final_price'],0,',','.') }}</span>
-                                        @if($avHasDisc)<span class="vc-chip-orig">Rp {{ number_format($av['price'],0,',','.') }}</span>@endif
-                                        @if($avOut)<span class="vc-chip-out-lbl">Habis</span>
-                                        @elseif($av['stock']<=5&&$av['stock']>0)<span class="vc-chip-stock">Sisa {{ $av['stock'] }}</span>@endif
-                                    </button>
-                                    @endforeach
-                                </div>
-                            </div>
                         </div>
                         @elseif($singleSize)
                         <span class="single-size-badge" style="margin-top:5px;">{{ $singleSize }}</span>
@@ -534,6 +508,71 @@
     @endif
     </div>
 
+    {{-- ══════════════════════════════════════════════════
+         SEMUA POPOVER DI-RENDER DI SINI — di luar tabel
+         Ini kunci fix: popover tidak lagi di dalam <td>
+         sehingga position:fixed bisa bekerja dengan benar
+    ══════════════════════════════════════════════════ --}}
+    @foreach($grouped as $storeKey => $group)
+    @foreach($group['items'] as $cartKey => $item)
+    @php $allVariants = $item['all_variants'] ?? []; $variantId = $item['variant_id'] ?? null; $needsVariant = (bool)($item['needs_variant_selection'] ?? false); $productId = $item['product_id']; @endphp
+    @if(count($allVariants) > 0)
+    {{-- Desktop popover --}}
+    <div class="vp-popover" id="vp-{{ $cartKey }}">
+        <p class="vp-popover-title">Pilih Ukuran</p>
+        <div class="vp-chips">
+            @foreach($allVariants as $av)
+            @php $avOut=$av['stock']==0;$avActive=$av['id']==$variantId&&!$needsVariant;$avHasDisc=$av['discount_percent']>0; @endphp
+            <button type="button"
+                    class="vc-chip {{ $avActive?'vc-chip-active':'' }} {{ $avOut?'vc-chip-out':'' }}"
+                    data-variant-id="{{ $av['id'] }}"
+                    data-price="{{ $av['final_price'] }}"
+                    data-original="{{ $av['price'] }}"
+                    data-discount="{{ $av['discount_percent'] }}"
+                    data-stock="{{ $av['stock'] }}"
+                    data-label="{{ $av['label'] }}"
+                    {{ $avOut?'disabled':'' }}
+                    onclick="selectChip('{{ $cartKey }}', {{ $productId }}, this)">
+                @if($avHasDisc)<span class="vc-disc-badge">-{{ $av['discount_percent'] }}%</span>@endif
+                <span class="vc-chip-label">{{ $av['label'] }}</span>
+                <span class="vc-chip-price {{ $avHasDisc?'has-disc':'' }}">Rp {{ number_format($av['final_price'],0,',','.') }}</span>
+                @if($avHasDisc)<span class="vc-chip-orig">Rp {{ number_format($av['price'],0,',','.') }}</span>@endif
+                @if($avOut)<span class="vc-chip-out-lbl">Habis</span>
+                @elseif($av['stock']<=5&&$av['stock']>0)<span class="vc-chip-stock">Sisa {{ $av['stock'] }}</span>@endif
+            </button>
+            @endforeach
+        </div>
+    </div>
+    {{-- Mobile popover --}}
+    <div class="vp-popover" id="vp-m-{{ $cartKey }}">
+        <p class="vp-popover-title">Pilih Ukuran</p>
+        <div class="vp-chips">
+            @foreach($allVariants as $av)
+            @php $avOut=$av['stock']==0;$avActive=$av['id']==$variantId&&!$needsVariant;$avHasDisc=$av['discount_percent']>0; @endphp
+            <button type="button"
+                    class="vc-chip {{ $avActive?'vc-chip-active':'' }} {{ $avOut?'vc-chip-out':'' }}"
+                    data-variant-id="{{ $av['id'] }}"
+                    data-price="{{ $av['final_price'] }}"
+                    data-original="{{ $av['price'] }}"
+                    data-discount="{{ $av['discount_percent'] }}"
+                    data-stock="{{ $av['stock'] }}"
+                    data-label="{{ $av['label'] }}"
+                    {{ $avOut?'disabled':'' }}
+                    onclick="selectChip('{{ $cartKey }}', {{ $productId }}, this)">
+                @if($avHasDisc)<span class="vc-disc-badge">-{{ $av['discount_percent'] }}%</span>@endif
+                <span class="vc-chip-label">{{ $av['label'] }}</span>
+                <span class="vc-chip-price {{ $avHasDisc?'has-disc':'' }}">Rp {{ number_format($av['final_price'],0,',','.') }}</span>
+                @if($avHasDisc)<span class="vc-chip-orig">Rp {{ number_format($av['price'],0,',','.') }}</span>@endif
+                @if($avOut)<span class="vc-chip-out-lbl">Habis</span>
+                @elseif($av['stock']<=5&&$av['stock']>0)<span class="vc-chip-stock">Sisa {{ $av['stock'] }}</span>@endif
+            </button>
+            @endforeach
+        </div>
+    </div>
+    @endif
+    @endforeach
+    @endforeach
+
     <form action="{{ route('checkout.select') }}" method="POST" id="checkoutForm">
         @csrf
         <div id="selectedInputs"></div>
@@ -568,12 +607,50 @@ function showToast(msg,type='info'){const wrap=document.getElementById('toastWra
 /* ── Animated number ── */
 function animateNumber(el,start,end){let s=null;const step=ts=>{if(!s)s=ts;const p=Math.min((ts-s)/280,1);el.textContent='Rp '+Math.floor(start+(end-start)*p).toLocaleString('id-ID');if(p<1)requestAnimationFrame(step);};requestAnimationFrame(step);}
 
-/* ── Popover helpers (vpToggle / vpOpen / vpCloseAll) ──
-   Renamed to avoid conflict with native HTML togglePopover() API ── */
+/* ══════════════════════════════════════════════════════
+   POPOVER — pakai position:fixed + JS positioning
+   Saat trigger diklik, kita hitung posisi trigger
+   dan set top/left popover secara manual
+══════════════════════════════════════════════════════ */
 function vpCloseAll() {
-    document.querySelectorAll('.vp-popover.vp-open').forEach(p => p.classList.remove('vp-open'));
-    document.querySelectorAll('.vp-trigger.vp-open').forEach(t => t.classList.remove('vp-open'));
+    document.querySelectorAll('.vp-popover.vp-open').forEach(p => {
+        p.classList.remove('vp-open');
+        p.style.top = '';
+        p.style.left = '';
+    });
+    document.querySelectorAll('.vp-trigger').forEach(t => {
+        t.classList.remove('vp-open');
+        const arrow = t.querySelector('.vp-trigger-arrow');
+        if (arrow) arrow.style.transform = '';
+    });
 }
+
+function vpPositionPopover(pop, triggerEl) {
+    // Hitung posisi trigger relatif ke viewport
+    const rect = triggerEl.getBoundingClientRect();
+    const popW = 280; // estimasi lebar popover
+    const margin = 8;
+
+    let top  = rect.bottom + margin;
+    let left = rect.left;
+
+    // Jangan sampai keluar kanan layar
+    if (left + popW > window.innerWidth - margin) {
+        left = window.innerWidth - popW - margin;
+    }
+    // Jangan sampai keluar kiri layar
+    if (left < margin) left = margin;
+
+    // Kalau bawah kurang ruang, muncul di atas trigger
+    const popH = 200; // estimasi tinggi
+    if (top + popH > window.innerHeight - margin) {
+        top = rect.top - popH - margin;
+    }
+
+    pop.style.top  = top + 'px';
+    pop.style.left = left + 'px';
+}
+
 function vpToggle(popId, triggerEl) {
     const pop = document.getElementById(popId);
     if (!pop) return;
@@ -581,18 +658,33 @@ function vpToggle(popId, triggerEl) {
     vpCloseAll();
     if (!isOpen) {
         pop.classList.add('vp-open');
-        if (triggerEl) triggerEl.classList.add('vp-open');
+        vpPositionPopover(pop, triggerEl);
+        if (triggerEl) {
+            triggerEl.classList.add('vp-open');
+            const arrow = triggerEl.querySelector('.vp-trigger-arrow');
+            if (arrow) arrow.style.transform = 'rotate(180deg)';
+        }
     }
 }
-function vpOpen(popId, triggerEl) {
-    vpCloseAll();
-    const pop = document.getElementById(popId);
-    if (pop) pop.classList.add('vp-open');
-    if (triggerEl) triggerEl.classList.add('vp-open');
+
+// Reposisi semua popover yang terbuka saat scroll/resize
+function vpRepositionOpen() {
+    document.querySelectorAll('.vp-popover.vp-open').forEach(pop => {
+        const popId   = pop.id;
+        const trigger = document.querySelector(`[data-pop="${popId}"]`);
+        if (trigger) vpPositionPopover(pop, trigger);
+    });
 }
-// Tutup popover saat klik di luar
+window.addEventListener('scroll', vpRepositionOpen, { passive: true });
+window.addEventListener('resize', vpRepositionOpen, { passive: true });
+
+// Tutup saat klik di luar
 document.addEventListener('click', e => {
-    if (!e.target.closest('.vp-wrap') && !e.target.closest('.stale-badge')) vpCloseAll();
+    if (!e.target.closest('.vp-wrap') &&
+        !e.target.closest('.vp-popover') &&
+        !e.target.closest('.stale-badge')) {
+        vpCloseAll();
+    }
 });
 
 /* ── Select chip ── */
@@ -657,6 +749,16 @@ async function selectChip(oldCartId, productId, chipEl) {
         };
         Object.entries(renames).forEach(([o,n])=>{const el=document.getElementById(o);if(el)el.id=n;});
 
+        // Update data-pop attribute pada trigger
+        ['vp-trigger-'+newCartId,'vp-trigger-m-'+newCartId].forEach(tId => {
+            const t = document.getElementById(tId);
+            if (t) {
+                const suffix = tId.startsWith('vp-trigger-m-') ? 'vp-m-' : 'vp-';
+                t.setAttribute('data-pop', suffix + newCartId);
+                t.setAttribute('onclick', `vpToggle('${suffix}${newCartId}', this)`);
+            }
+        });
+
         // Update checkbox
         document.querySelectorAll(`[data-id="${oldCartId}"]`).forEach(el=>{el.dataset.id=newCartId;el.dataset.price=newPrice;el.disabled=false;});
 
@@ -677,13 +779,15 @@ async function selectChip(oldCartId, productId, chipEl) {
             t.classList.remove('needs-pick');t.classList.add('has-variant');t.disabled=false;
             let db=t.querySelector('.vp-disc-pill');
             if(newDiscount>0){if(!db){db=document.createElement('span');db.className='vp-disc-pill';t.insertBefore(db,t.firstChild);}db.textContent=`-${newDiscount}%`;}else{db?.remove();}
-            t.setAttribute('onclick',`vpToggle('vp-${newCartId}', this)`);
         });
 
-        // Update active chip
+        // Update active chip di kedua popover
         ['vp-'+newCartId,'vp-m-'+newCartId].forEach(popId=>{
             const pop=document.getElementById(popId);if(!pop)return;
-            pop.querySelectorAll('.vc-chip').forEach(c=>{c.classList.toggle('vc-chip-active',c.dataset.variantId==newVariantId);c.setAttribute('onclick',`selectChip('${newCartId}', ${productId}, this)`);});
+            pop.querySelectorAll('.vc-chip').forEach(c=>{
+                c.classList.toggle('vc-chip-active',c.dataset.variantId==newVariantId);
+                c.setAttribute('onclick',`selectChip('${newCartId}', ${productId}, this)`);
+            });
         });
 
         // Update qty buttons
@@ -722,9 +826,10 @@ async function ajaxQty(cartId,delta,stock){const qtyEls=[document.getElementById
 function collapseAndRemove(el){if(!el)return;el.style.height=el.offsetHeight+'px';el.style.overflow='hidden';el.style.transition='all .3s ease';requestAnimationFrame(()=>{el.style.opacity='0';el.style.height='0';el.style.marginBottom='0';el.style.paddingTop='0';el.style.paddingBottom='0';});setTimeout(()=>{el.remove();cleanupEmptyGroups();},320);}
 function cleanupEmptyGroups(){document.querySelectorAll('.store-group').forEach(g=>{if(g.querySelectorAll('.cart-row,.cart-card').length===0)collapseAndRemove(g);});updateSummary();syncStoreChecks();}
 function updateCartBadge(delta){document.querySelectorAll('.cart-count').forEach(el=>{el.textContent=Math.max(0,(parseInt(el.textContent)||0)+delta);el.classList.add('pulse');setTimeout(()=>el.classList.remove('pulse'),300);});}
-async function removeItem(id){showConfirm('Hapus produk ini dari keranjang?',async()=>{try{await fetch(`/cart/remove/${id}`,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF,'X-Requested-With':'XMLHttpRequest'}});collapseAndRemove(document.getElementById('row-'+id));collapseAndRemove(document.getElementById('row-m-'+id));updateCartBadge(-1);showToast('Produk dihapus.','success');}catch{showToast('Gagal hapus.','error');}});}
-function deleteSelected(){const ids=[...new Set([...document.querySelectorAll('.item-check:checked')].map(cb=>cb.dataset.id))];if(!ids.length){showToast('Pilih produk dulu.','warning');return;}showConfirm(`Hapus ${ids.length} produk terpilih?`,async()=>{try{await fetch('/cart/remove-selected',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify({ids})});ids.forEach(id=>{collapseAndRemove(document.getElementById('row-'+id));collapseAndRemove(document.getElementById('row-m-'+id));});updateCartBadge(-ids.length);showToast('Produk terpilih dihapus.','success');}catch{showToast('Gagal hapus.','error');}});}
-async function clearCart(){showConfirm('Kosongkan semua keranjang?',async()=>{try{await fetch('{{ route("cart.clear") }}',{method:'POST',headers:{'X-CSRF-TOKEN':CSRF,'X-Requested-With':'XMLHttpRequest'}});document.querySelectorAll('.cart-row,.cart-card').forEach(el=>collapseAndRemove(el));setTimeout(()=>{const w=document.querySelector('.cart-wrap');if(w)w.innerHTML=`<p class="cart-header-label">Taku</p><h1 class="cart-title">Keranjang Belanja</h1><div class="cart-empty"><span class="cart-empty-icon">🛒</span><p>Keranjang kamu masih kosong.</p><a href="{{ route('products') }}" class="cart-empty-btn">Mulai Belanja</a></div>`;},400);showToast('Keranjang dikosongkan.','success');}catch{showToast('Gagal.','error');}});}
+async function removeItem(id){showConfirm('Hapus produk ini dari keranjang?',async()=>{try{await fetch(`/cart/remove/${id}`,{method:'POST',headers:{'X-CSRF-TOKEN':CSRF,'X-Requested-With':'XMLHttpRequest'}});collapseAndRemove(document.getElementById('row-'+id));collapseAndRemove(document.getElementById('row-m-'+id));// Hapus juga popover yang terkait
+const popD=document.getElementById('vp-'+id);if(popD)popD.remove();const popM=document.getElementById('vp-m-'+id);if(popM)popM.remove();updateCartBadge(-1);showToast('Produk dihapus.','success');}catch{showToast('Gagal hapus.','error');}});}
+function deleteSelected(){const ids=[...new Set([...document.querySelectorAll('.item-check:checked')].map(cb=>cb.dataset.id))];if(!ids.length){showToast('Pilih produk dulu.','warning');return;}showConfirm(`Hapus ${ids.length} produk terpilih?`,async()=>{try{await fetch('/cart/remove-selected',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-TOKEN':CSRF,'X-Requested-With':'XMLHttpRequest'},body:JSON.stringify({ids})});ids.forEach(id=>{collapseAndRemove(document.getElementById('row-'+id));collapseAndRemove(document.getElementById('row-m-'+id));const pd=document.getElementById('vp-'+id);if(pd)pd.remove();const pm=document.getElementById('vp-m-'+id);if(pm)pm.remove();});updateCartBadge(-ids.length);showToast('Produk terpilih dihapus.','success');}catch{showToast('Gagal hapus.','error');}});}
+async function clearCart(){showConfirm('Kosongkan semua keranjang?',async()=>{try{await fetch('{{ route("cart.clear") }}',{method:'POST',headers:{'X-CSRF-TOKEN':CSRF,'X-Requested-With':'XMLHttpRequest'}});document.querySelectorAll('.cart-row,.cart-card').forEach(el=>collapseAndRemove(el));document.querySelectorAll('.vp-popover').forEach(p=>p.remove());setTimeout(()=>{const w=document.querySelector('.cart-wrap');if(w)w.innerHTML=`<p class="cart-header-label">Taku</p><h1 class="cart-title">Keranjang Belanja</h1><div class="cart-empty"><span class="cart-empty-icon">🛒</span><p>Keranjang kamu masih kosong.</p><a href="{{ route('products') }}" class="cart-empty-btn">Mulai Belanja</a></div>`;},400);showToast('Keranjang dikosongkan.','success');}catch{showToast('Gagal.','error');}});}
 
 function toggleStoreCollapse(btn){const body=btn.closest('.store-group').querySelector('.cart-table,.cart-mobile');if(!body)return;const collapsed=body.style.display==='none';body.style.display=collapsed?'':'none';btn.style.transform=collapsed?'rotate(0deg)':'rotate(-90deg)';}
 function toggleEditMode(){editMode=!editMode;const btn=document.getElementById('btnEdit');const del=document.getElementById('btnDelSelected');if(btn){btn.textContent=editMode?'Selesai':'Ubah';btn.classList.toggle('active',editMode);}if(del)del.classList.toggle('show',editMode);}

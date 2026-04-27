@@ -49,7 +49,7 @@
     @if($searchProducts->count() > 0)
     <div class="sr-prod-grid">
         @foreach($searchProducts as $product)
-        <a href="{{ route('product.show', $product->id) }}" class="sr-prod-card">
+        <a href="{{ route('product.show', $product->slug) }}" class="sr-prod-card">
             <img src="{{ asset($product->image ?? 'images/placeholder.jpg') }}"
                  class="sr-prod-img" alt="{{ $product->name }}"
                  onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
