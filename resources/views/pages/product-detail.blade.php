@@ -450,13 +450,14 @@ const VARIANTS_DATA = {
     @endif
 
     {{-- Slider: produk lain --}}
-    @if(isset($products) && $products->count() > 0)
+
+    @if(isset($others) && $others->count() > 0)
     <div class="pd-section">
         <p class="pd-section-label">Taku</p>
         <h2 class="pd-section-title">{{ __('app.other_products') }}</h2>
         <div class="slider-outer">
             <div class="slider-track" id="sliderOthers">
-                @foreach($products as $item)
+                @foreach($others as $item)
                 @php $itemImg = $item->image ?? ($item->images->first()->image ?? null); $stockOut = $item->stock === 0; @endphp
                 <a href="{{ route('product.show', $item->slug) }}" class="slider-card">
                     <div class="slider-card-img-wrap">

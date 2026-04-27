@@ -83,7 +83,7 @@ class ProductController extends Controller
             $topStores = $topStores->prepend($officialStore);
         }
 
-        // ── Home sections manual dari admin 
+        // ── Home sections manual dari admin
         $homeSections = \App\Models\HomeSection::active()
             ->with(['products' => fn($q) => $q->active()->with('images', 'store', 'variants')])
             ->orderBy('sort')
@@ -157,6 +157,13 @@ class ProductController extends Controller
 
 public function show($slug)
 {
+    // Support link lama pakai ID -> redirect ke slug
+    if (is_numeric($slug)) {
+        $legacyProduct = Product::active()->findOrFail($slug);
+
+        return redirect()->route('product.show', $legacyProduct->slug, 301);
+    }
+
     $product = Product::active()
         ->with('images', 'store', 'category', 'variants')
         ->where('slug', $slug)
@@ -164,31 +171,46 @@ public function show($slug)
 
     $id = $product->id;
 
+    // Produk toko yang sama / official
     if ($product->store_id) {
-        $storeProducts = Product::active()->with('images')
+        $storeProducts = Product::active()
+            ->with('images', 'variants')
             ->where('id', '!=', $id)
             ->where('store_id', $product->store_id)
-            ->latest()->take(12)->get();
+            ->latest()
+            ->take(12)
+            ->get();
     } else {
-        $storeProducts = Product::active()->with('images')
+        $storeProducts = Product::active()
+            ->with('images', 'variants')
             ->where('id', '!=', $id)
             ->whereNull('store_id')
-            ->latest()->take(12)->get();
+            ->latest()
+            ->take(12)
+            ->get();
     }
 
     $storeProductIds = $storeProducts->pluck('id')->push($id);
 
-    $others = Product::active()->with('images', 'store')
+    // Rekomendasi lain
+    $others = Product::active()
+        ->with('images', 'store', 'variants')
         ->whereNotIn('id', $storeProductIds)
-        ->when($product->category_id, fn($q) =>
-            $q->where('category_id', $product->category_id)
-        )
-        ->latest()->take(12)->get();
+        ->when($product->category_id, function ($q) use ($product) {
+            $q->where('category_id', $product->category_id);
+        })
+        ->latest()
+        ->take(12)
+        ->get();
 
+    // Fallback kalau terlalu sedikit
     if ($others->count() < 3) {
-        $others = Product::active()->with('images', 'store')
+        $others = Product::active()
+            ->with('images', 'store', 'variants')
             ->whereNotIn('id', $storeProductIds)
-            ->latest()->take(12)->get();
+            ->latest()
+            ->take(12)
+            ->get();
     }
 
     $isWishlisted = false;
