@@ -224,49 +224,22 @@
         <button type="button" class="btn-del-sel" id="btnDelSelected" onclick="deleteSelected()">Hapus yang Dipilih</button>
     </div>
 
-<div id="cartItems">
-@foreach($grouped as $storeKey => $group)
-<div class="store-group">
-    <div class="store-group-header">
+    <div id="cartItems">
+    @foreach($grouped as $storeKey => $group)
+    <div class="store-group">
+        <div class="store-group-header">
+            <input type="checkbox" class="store-group-check store-check" data-store="{{ $storeKey }}"
+                onchange="toggleStore('{{ $storeKey }}', this.checked)">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="rgba(11,42,74,.45)" stroke-width="1.5" style="flex-shrink:0;"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg>
+            @if($group['store_slug'] ?? null)
+                <a href="{{ route('store.show', $group['store_slug']) }}" class="store-group-name">{{ $group['store_name'] }}</a>
+            @else
+                <span class="store-group-name" style="cursor:default;">{{ $group['store_name'] }}</span>
+            @endif
+            <span class="store-group-badge">{{ count($group['items']) }} produk</span>
+            <button type="button" class="store-toggle" onclick="toggleStoreCollapse(this)">▾</button>
+        </div>
 
-        <input type="checkbox"
-            class="store-group-check store-check"
-            data-store="{{ $storeKey }}"
-            onchange="toggleStore('{{ $storeKey }}', this.checked)">
-
-        {{-- ICON TOKO --}}
-        <a href="{{ ($group['store_slug'] ?? null) ? route('store.show', $group['store_slug']) : url('/toko/taku-official') }}"
-           class="store-icon-link">
-
-            <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-                stroke="rgba(11,42,74,.45)" stroke-width="1.5"
-                style="flex-shrink:0;">
-                <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
-                <polyline points="9 22 9 12 15 12 15 22"/>
-            </svg>
-
-        </a>
-
-        {{-- NAMA TOKO --}}
-        <a href="{{ ($group['store_slug'] ?? null) ? route('store.show', $group['store_slug']) : url('/toko/taku-official') }}"
-           class="store-group-name">
-
-            {{ $group['store_name'] }}
-
-        </a>
-
-        <span class="store-group-badge">
-            {{ count($group['items']) }} produk
-        </span>
-
-        <button type="button"
-            class="store-toggle"
-            onclick="toggleStoreCollapse(this)">
-            ▾
-        </button>
-
-    </div>
-    
         {{-- ── DESKTOP ── --}}
         <table class="cart-table cart-desktop">
             <thead>
@@ -314,14 +287,14 @@
                 </td>
                 <td>
                     <div class="cart-product">
-                        <a href="{{ route('product.show', $item['slug'] ?? $productId) }}">
+                        <a href="{{ route('product.show', $productId) }}">
                             <img src="{{ asset($item['image'] ?? 'images/placeholder.jpg') }}"
                                  class="cart-product-img" alt="{{ $item['name'] }}"
                                  style="{{ $stockOut && !$needsVariant ? 'opacity:.4;' : '' }}"
                                  onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
                         </a>
                         <div style="min-width:0;">
-                            <a href="{{ route('product.show', $item['slug'] ?? $productId) }}" class="cart-product-name">{{ $item['name'] }}</a>
+                            <a href="{{ route('product.show', $productId) }}" class="cart-product-name">{{ $item['name'] }}</a>
                             @if($stockOut && !$needsVariant)
                                 <span class="stock-out-badge">Stok Habis</span>
                             @endif
@@ -423,13 +396,13 @@
                            {{ $isSelected&&!$rowDisabled?'checked':'' }}
                            {{ $rowDisabled?'disabled':'' }}
                            onchange="onItemCheck(this, '{{ $cartKey }}')">
-                    <a href="{{ route('product.show', $item['slug'] ?? $productId) }}">
+                    <a href="{{ route('product.show', $productId) }}">
                         <img src="{{ asset($item['image'] ?? 'images/placeholder.jpg') }}"
                              class="cart-card-img" alt="{{ $item['name'] }}"
                              onerror="this.src='{{ asset('images/placeholder.jpg') }}'">
                     </a>
                     <div class="cart-card-info">
-                        <a href="{{ route('product.show', $item['slug'] ?? $productId) }}" class="cart-product-name">{{ $item['name'] }}</a>
+                        <a href="{{ route('product.show', $productId) }}" class="cart-product-name">{{ $item['name'] }}</a>
                         @if(!$needsVariant&&!$stockOut)
                             <p class="price-final {{ $hasDiscount?'discounted':'' }}" style="margin-top:2px;" id="price-m-{{ $cartKey }}">Rp {{ number_format($finalPrice,0,',','.') }}</p>
                             @if($hasDiscount)<p class="price-original" id="orig-m-{{ $cartKey }}">Rp {{ number_format($origPrice,0,',','.') }}</p>@endif
@@ -760,7 +733,14 @@ async function selectChip(oldCartId, productId, chipEl) {
         });
 
         // Update checkbox
-        document.querySelectorAll(`[data-id="${oldCartId}"]`).forEach(el=>{el.dataset.id=newCartId;el.dataset.price=newPrice;el.disabled=false;});
+        document.querySelectorAll(`[data-id="${oldCartId}"]`).forEach(el=>{el.dataset.id=newCartId;el.dataset.price=newPrice;el.dataset.qty=qty;el.disabled=false;});
+
+        // Update qty display kalau ada penyesuaian (clamp stok)
+        if (data.was_adjusted) {
+            ["qty-"+newCartId,"qty-m-"+newCartId].forEach(qid=>{const el=document.getElementById(qid);if(el)el.textContent=qty;});
+            const rowEl2=document.getElementById("row-"+newCartId);
+            if(rowEl2){const btns=rowEl2.querySelectorAll(".cart-qty-btn");if(btns[0])btns[0].disabled=qty<=1;if(btns[1])btns[1].disabled=data.stock>0&&qty>=data.stock;}
+        }
 
         // Update harga
         ['price-'+newCartId,'price-m-'+newCartId].forEach(id=>{const el=document.getElementById(id);if(!el)return;el.textContent='Rp '+newPrice.toLocaleString('id-ID');el.className='price-final'+(newDiscount>0?' discounted':'');});
@@ -803,7 +783,14 @@ async function selectChip(oldCartId, productId, chipEl) {
         document.querySelectorAll(`[data-id="${newCartId}"]`).forEach(el=>{if(el.type==='checkbox'){el.checked=true;saveSelect(newCartId,true);}});
 
         updateSummary();syncStoreChecks();
-        showToast('Ukuran diubah ke '+newLabel,'success');
+
+        // Tampilkan toast sesuai kondisi
+        if (data.was_adjusted) {
+            // Qty disesuaikan karena stok variant baru lebih kecil
+            showToast(data.adjust_msg, 'warning');
+        } else {
+            showToast('Ukuran diubah ke ' + newLabel, 'success');
+        }
 
     } catch(err) {
         console.error(err);showToast('Terjadi kesalahan.','error');

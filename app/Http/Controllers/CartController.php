@@ -95,7 +95,11 @@ class CartController extends Controller
 
     /**
      * Ganti variant item di cart (AJAX).
-     * Hapus key lama, tambah key baru dengan qty yang sama.
+     *
+     * Behaviour (seperti Tokopedia/Shopee):
+     * - Kalau qty lama <= stok variant baru  → pakai qty lama (tidak ada perubahan)
+     * - Kalau qty lama >  stok variant baru  → clamp ke stok baru, beri tahu user
+     * - Kalau variant baru stok = 0          → tolak, tidak bisa ganti
      *
      * Request body: { old_key: "15_3", new_variant_id: 5 }
      */
@@ -109,7 +113,7 @@ class CartController extends Controller
         $oldKey       = (string) $request->old_key;
         $newVariantId = (int) $request->new_variant_id;
 
-        // Ambil qty item lama
+        // Ambil item lama dari cart
         $cart    = $this->cart->get();
         $oldItem = $cart[$oldKey] ?? null;
 
@@ -117,7 +121,7 @@ class CartController extends Controller
             return response()->json(['ok' => false, 'message' => 'Item tidak ditemukan di cart.'], 404);
         }
 
-        $qty       = (int) ($oldItem['qty'] ?? 1);
+        $oldQty    = (int) ($oldItem['qty'] ?? 1);
         $productId = (int) $oldItem['product_id'];
 
         // Validasi variant baru milik produk yang sama
@@ -126,32 +130,56 @@ class CartController extends Controller
             return response()->json(['ok' => false, 'message' => 'Variant tidak valid.'], 422);
         }
 
-        // Cek stok variant baru
-        $newKey    = "{$productId}_{$newVariantId}";
-        $inCart    = $cart[$newKey]['qty'] ?? 0;
-        $totalQty  = $inCart + $qty;
-
-        if ($newVariant->stock > 0 && $totalQty > $newVariant->stock) {
+        // Tolak kalau variant baru stok habis total
+        if ($newVariant->stock === 0) {
             return response()->json([
                 'ok'      => false,
-                'message' => "Stok {$newVariant->getLabel()} hanya tersisa {$newVariant->stock}.",
+                'message' => "{$newVariant->getLabel()} sedang habis stok.",
             ], 422);
         }
 
-        // Hapus item lama, tambah item baru (atau merge kalau sudah ada)
-        $this->cart->removeByKey($oldKey);
-        $this->cart->add($productId, $qty, $newVariantId);
+        // ── CLAMP: kalau qty lama melebihi stok variant baru, sesuaikan ──
+        $newKey   = "{$productId}_{$newVariantId}";
+        $inCart   = $cart[$newKey]['qty'] ?? 0; // sudah ada di cart sebelumnya?
+        $totalQty = $inCart + $oldQty;
 
-        // Kembalikan data variant baru untuk update UI tanpa reload
+        $finalQty    = $oldQty;   // qty yang akan disimpan
+        $wasAdjusted = false;     // apakah ada penyesuaian qty?
+        $adjustMsg   = null;
+
+        if ($newVariant->stock > 0 && $totalQty > $newVariant->stock) {
+            // Hitung berapa yang masih bisa ditambah ke slot variant baru
+            $available = max(0, $newVariant->stock - $inCart);
+
+            if ($available === 0) {
+                // Variant baru sudah penuh di cart (dari item lain)
+                return response()->json([
+                    'ok'      => false,
+                    'message' => "{$newVariant->getLabel()} sudah ada di keranjang dan mencapai batas stok ({$newVariant->stock}).",
+                ], 422);
+            }
+
+            // Clamp ke available stock
+            $finalQty    = $available;
+            $wasAdjusted = true;
+            $adjustMsg   = "Jumlah disesuaikan menjadi {$finalQty} karena stok {$newVariant->getLabel()} hanya tersisa {$newVariant->stock}.";
+        }
+
+        // Hapus item lama, tambah/merge item baru dengan qty yang sudah di-clamp
+        $this->cart->removeByKey($oldKey);
+        $this->cart->add($productId, $finalQty, $newVariantId);
+
         return response()->json([
-            'ok'        => true,
-            'new_key'   => $newKey,
-            'label'     => $newVariant->getLabel(),
-            'price'     => $newVariant->getFinalPrice(),
+            'ok'           => true,
+            'new_key'      => $newKey,
+            'label'        => $newVariant->getLabel(),
+            'price'        => $newVariant->getFinalPrice(),
             'original_price' => $newVariant->hasDiscount() ? $newVariant->price : null,
-            'discount'  => $newVariant->hasDiscount() ? $newVariant->discount_percent : 0,
-            'stock'     => $newVariant->stock,
-            'qty'       => $qty,
+            'discount'     => $newVariant->hasDiscount() ? $newVariant->discount_percent : 0,
+            'stock'        => $newVariant->stock,
+            'qty'          => $finalQty,       // qty aktual setelah clamp
+            'was_adjusted' => $wasAdjusted,    // flag untuk frontend
+            'adjust_msg'   => $adjustMsg,      // pesan jika ada penyesuaian
         ]);
     }
 
