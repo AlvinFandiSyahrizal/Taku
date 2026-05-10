@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Taku — Bringing Life Into Modern Spaces')
-@section('meta_description', 'Belanja tanaman premium online di Taku. Koleksi tanaman hias estetik, indoor plants, dekorasi rumah modern, dan premium plants pilihan.')
+@section('meta_description', 'Shop for premium plants online at Taku. A selection of aesthetic houseplants, indoor plants, modern home decor, and premium plants.')
 @section('content')
 @php
     app()->setLocale(session('lang','id'));

@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Taku Official — Koleksi Tanaman Pilihan Tim Taku')
-@section('meta_description', 'Belanja langsung dari Taku Official Store. Setiap tanaman dikurasi dengan cermat oleh tim kami — kualitas terjamin, estetik terjaga.')
+@section('title', 'Taku Official — Taku Team\'s Selected Plant Collection')
+@section('meta_description', 'Shop directly from the Taku Official Store. Each plant is carefully curated by our team—quality guaranteed, aesthetics maintained.')
 @section('content')
 @php
     app()->setLocale(session('lang','id'));

@@ -8,21 +8,21 @@
 
     <meta name="theme-color" content="#111111">
     <title>@yield('title', 'Taku — Premium Plant Marketplace Indonesia')</title>
-    <meta name="description" content="@yield('meta_description', 'Taku menghadirkan tanaman premium pilihan untuk ruang modern kamu. Temukan koleksi plants berkualitas, estetik, dan mudah dirawat — dikirim ke seluruh Indonesia.')">
-    <meta name="keywords" content="taku, premium plants, tanaman hias premium, jual tanaman online, tanaman indoor, tanaman estetik, plant marketplace, tanaman untuk apartemen, tanaman dekorasi rumah, beli tanaman online Indonesia">
+    <meta name="description" content="@yield('meta_description', 'Taku offers a selection of premium plants for your modern space. Discover a collection of high-quality, aesthetically pleasing, and easy-care plants—shipped throughout Indonesia.')">
+    <meta name="keywords" content="taku, premium plants, premium ornamental plants, sell plants online, indoor plants, aesthetic plants, plant marketplace, plants for apartments, home decoration plants, buy plants online in Indonesia">
     <meta name="robots" content="@yield('robots', 'index, follow')">
     <link rel="canonical" href="{{ url()->current() }}">
 
     <meta property="og:type" content="website">
     <meta property="og:site_name" content="Taku">
     <meta property="og:title" content="@yield('title', 'Taku — Premium Plant Marketplace Indonesia')">
-    <meta property="og:description" content="@yield('meta_description', 'Taku menghadirkan tanaman premium pilihan untuk ruang modern kamu. Estetik, berkualitas, dikirim ke seluruh Indonesia.')">
+    <meta property="og:description" content="@yield('meta_description', 'Taku offers a selection of premium plants for your modern space. Discover a collection of high-quality, aesthetically pleasing, and easy-care plants—shipped throughout Indonesia.')">
     <meta property="og:url" content="{{ url()->current() }}">
     <meta property="og:image" content="@yield('og_image', asset('images/og-taku.jpg'))">
 
     <meta name="twitter:card" content="summary_large_image">
     <meta name="twitter:title" content="@yield('title', 'Taku — Premium Plant Marketplace Indonesia')">
-    <meta name="twitter:description" content="@yield('meta_description', 'Tanaman premium pilihan untuk ruang modern kamu. Hanya di Taku.')">
+    <meta name="twitter:description" content="@yield('meta_description', 'Taku offers a selection of premium plants for your modern space. Discover a collection of high-quality, aesthetically pleasing, and easy-care plants—shipped throughout Indonesia.')">
     <meta name="twitter:image" content="@yield('og_image', asset('images/og-taku.jpg'))">
 
     <link rel="icon" type="image/png" href="{{ asset('favicon.png') }}" sizes="32x32">

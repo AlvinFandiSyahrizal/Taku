@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', $product->name . ' — Taku')
-@section('meta_description', Str::limit(strip_tags($product->description ?? $product->name . ' — tanaman premium pilihan di Taku. Estetik, berkualitas, cocok untuk ruang modern kamu.'), 155))
+@section('meta_description', Str::limit(strip_tags($product->description ?? $product->name . ' — Selected premium plants in Taku. Aesthetic, high-quality, perfect for your modern space.'), 155))
 @section('og_image', asset($product->image ?? 'images/og-taku.jpg'))
 @section('content')
 @php

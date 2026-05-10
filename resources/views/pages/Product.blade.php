@@ -1,6 +1,6 @@
 @extends('layouts.app')
-@section('title', 'Koleksi Tanaman Premium — Taku')
-@section('meta_description', 'Jelajahi koleksi lengkap tanaman hias premium di Taku. Filter berdasarkan kategori, ukuran, dan harga.')
+@section('title', 'Premium Plant Collection — Taku Marketplace')
+@section('meta_description', 'Explore Taku's extensive collection of premium houseplants. Filter by category, size, and price.')
 @section('content')
 @php app()->setLocale(session('lang','id')); @endphp
 

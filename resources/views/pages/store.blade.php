@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', $store->name . ' — Toko Tanaman di Taku')
-@section('meta_description', Str::limit($store->description ?? 'Kunjungi ' . $store->name . ' di Taku Marketplace. Temukan koleksi tanaman premium pilihan dari merchant terpercaya.', 155))
+@section('meta_description', Str::limit($store->description ?? 'Kunjungi ' . $store->name . ' At Taku Marketplace, discover a selection of premium plants from trusted merchants.', 155))
 @section('content')
 @php
     app()->setLocale(session('lang','id'));
