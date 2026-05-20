@@ -17,7 +17,9 @@ class ProductController extends Controller
 
     private function authorizeProduct(Product $product)
     {
-        if ($product->store_id !== $this->myStore()->id) abort(403);
+        if ((int) $product->store_id !== (int) $this->myStore()->id) {
+        abort(403);
+    }
     }
 
     public function index()
