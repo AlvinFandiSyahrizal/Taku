@@ -107,7 +107,7 @@
                             style="background:none;border:.5px solid rgba(11,42,74,.2);border-radius:8px;padding:9px 18px;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:rgba(11,42,74,.6);cursor:pointer;font-family:'DM Sans',sans-serif;">
                             Ganti Logo
                         </button>
-                        <p style="font-size:11px;color:rgba(11,42,74,.35);margin-top:6px;">Max 1MB. JPG atau PNG.</p>
+                        <p style="font-size:11px;color:rgba(11,42,74,.35);margin-top:6px;">Max 2MB. JPG atau PNG.</p>
                     </form>
                 </div>
             </div>

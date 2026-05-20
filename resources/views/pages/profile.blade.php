@@ -109,7 +109,7 @@
                                     Ganti Foto
                                 </button>
                             </form>
-                            <p style="font-size:11px;color:rgba(11,42,74,.35);margin-top:6px;">Max 1MB. JPG atau PNG.</p>
+                            <p style="font-size:11px;color:rgba(11,42,74,.35);margin-top:6px;">Max 2MB. JPG atau PNG.</p>
                         </div>
                     </div>
                 </div>
