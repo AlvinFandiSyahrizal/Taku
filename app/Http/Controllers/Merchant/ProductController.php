@@ -81,7 +81,7 @@ public function create()
         $product = Product::create([
             'store_id'         => $this->myStore()->id,
             'name'             => $request->name,
-            'slug'             => $this->generateProductSlug($request->name),
+            'slug' => Str::slug($request->name) . '-' . time(),
             'price'            => $request->price,
             'discount_percent' => (int) $request->get('discount_percent', 0),
             'stock'            => (int) $request->get('stock', 0),
@@ -169,7 +169,7 @@ public function edit(Product $product)
 
         $product->update([
             'name'             => $request->name,
-            'slug'             => $this->generateProductSlug($request->name, $product->id),
+            'slug' => Str::slug($request->name) . '-' . $product->id,
             'price'            => $request->price,
             'desc_id'          => $request->desc_id,
             'desc_en'          => $request->desc_en,

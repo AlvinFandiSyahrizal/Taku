@@ -1,6 +1,6 @@
 @extends('layouts.app')
 @section('title', 'Premium Plant Collection — Taku Marketplace')
-@section('meta_description', 'Explore Taku's extensive collection of premium houseplants. Filter by category, size, and price.')
+@section('meta_description', "Explore Taku's extensive collection of premium houseplants. Filter by category, size, and price.")
 @section('content')
 @php app()->setLocale(session('lang','id')); @endphp
 

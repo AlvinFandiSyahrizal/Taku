@@ -174,7 +174,7 @@ input[type="checkbox"].toggle:checked::after{left:18px;}
             <p class="form-hint" style="margin-top:8px;">Upload baru untuk mengganti.</p>
         @endif
         <input type="file" name="image" class="form-input" accept="image/*" onchange="previewMain(this)" style="margin-top:10px;">
-        <p class="form-hint">Max 2MB. Format: JPG, PNG, WEBP</p>
+        <p class="form-hint">Max 1MB. Format: JPG, PNG, WEBP</p>
         <div id="mainPreview" class="image-preview"></div>
     </div>
 
