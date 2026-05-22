@@ -12,9 +12,9 @@
     transition: height 0.3s ease, background 0.3s ease;
 }
 
-.taku-header.scrolled {     
-    height: 54px; 
-    background: rgba(31, 61, 43, 0.98); 
+.taku-header.scrolled {
+    height: 54px;
+    background: rgba(31, 61, 43, 0.98);
     box-shadow: 0 6px 20px rgba(0,0,0,0.15);
 }
 
@@ -24,8 +24,8 @@
     text-transform: uppercase; text-decoration: none;
     display: flex; align-items: center; gap: 10px; flex: 0 0 auto;
 }
-.taku-logo-dot { width: 5px; height: 5px; background: #C96A3D; 
-    border-radius: 50%; margin-top: 2px; 
+.taku-logo-dot { width: 5px; height: 5px; background: #C96A3D;
+    border-radius: 50%; margin-top: 2px;
 }
 
 .taku-nav {
@@ -193,6 +193,7 @@
     <nav class="taku-nav">
         <a href="{{ route('home') }}">{{ __('app.home') }}</a>
         <a href="{{ route('products') }}">{{ __('app.shop') }}</a>
+        {{-- <a href="{{ route('social') }}">{{ __('app.social') }}</a> --}}
     </nav>
 
     <div class="taku-right">

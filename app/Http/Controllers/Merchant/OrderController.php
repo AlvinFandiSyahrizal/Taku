@@ -49,7 +49,7 @@ public function index(Request $request)
 
     public function show(Order $order)
     {
-        if ($order->store_id !== $this->myStore()->id) {
+        if ((int) $order->store_id !== (int) $this->myStore()->id) {
             abort(403);
         }
 
@@ -59,7 +59,7 @@ public function index(Request $request)
 
     public function updateStatus(Request $request, Order $order)
     {
-        if ($order->store_id !== $this->myStore()->id) {
+        if ((int) $order->store_id !== (int) $this->myStore()->id) {
             abort(403);
         }
 

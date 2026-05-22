@@ -34,7 +34,7 @@ class OrderController extends Controller
 
     public function show(Order $order)
     {
-        if ($order->user_id !== Auth::id()) {
+        if ((int) $order->user_id !== (int) Auth::id()) {
             abort(403);
         }
 
@@ -44,7 +44,7 @@ class OrderController extends Controller
 
     public function cancel(Order $order)
     {
-        if ($order->user_id !== Auth::id()) abort(403);
+        if ((int) $order->user_id !== (int) Auth::id()) abort(403);
 
         if ($order->status !== 'pending') {
             return back()->with('error', 'Pesanan tidak bisa dibatalkan karena sudah diproses.');
