@@ -193,7 +193,7 @@
     <nav class="taku-nav">
         <a href="{{ route('home') }}">{{ __('app.home') }}</a>
         <a href="{{ route('products') }}">{{ __('app.shop') }}</a>
-        {{-- <a href="{{ route('social') }}">{{ __('app.social') }}</a> --}}
+        <a href="{{ route('social') }}">{{ __('app.social') }}</a>
     </nav>
 
     <div class="taku-right">
@@ -396,6 +396,7 @@
 <div class="mobile-nav" id="mobileNav">
     <a href="{{ route('home') }}">{{ __('app.home') }}</a>
     <a href="{{ route('products') }}">{{ __('app.shop') }}</a>
+    <a href="{{ route('social') }}">{{ __('app.social') }}</a>
     @auth
     <a href="{{ route('orders.index') }}">Pesanan Saya</a>
     <a href="{{ route('profile') }}">Profil</a>

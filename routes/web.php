@@ -74,6 +74,8 @@ Route::get('/lang/{lang}', [LanguageController::class, 'switch'])->name('lang.sw
 // ── Public
 Route::get('/', [ProductController::class, 'index'])->name('home');
 Route::get('/products', [ProductController::class, 'shop'])->name('products');
+Route::get('/social', function () {return view('pages.social');})->name('social');
+
 Route::get('/product/{slug}', [ProductController::class, 'show'])->name('product.show');
 
 Route::get('/toko/taku-official', [StoreController::class, 'showOfficial'])->name('store.official');
