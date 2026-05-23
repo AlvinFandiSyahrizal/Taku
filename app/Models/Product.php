@@ -17,6 +17,7 @@ class Product extends Model
         'detail_en',
         'price',
         'image',
+        'video',
         'is_active',
         'category_id',
         'stock',

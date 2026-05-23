@@ -171,31 +171,78 @@ const VARIANTS_DATA = {
 
     <div class="pd-main">
 
-        {{-- ── GAMBAR ─────────────────────────────────────────────────── --}}
-        <div class="pd-images">
-            @php
-                $allImages = [];
-                if($product->images->count() > 0) $allImages = $product->images->pluck('image')->toArray();
-                if($product->image) array_unshift($allImages, $product->image);
-                $allImages = array_unique($allImages);
-                $mainImg   = $allImages[0] ?? null;
-            @endphp
-            <div class="pd-main-img-wrap">
-                @if($mainImg)
-                    <img id="mainImage" src="{{ asset($mainImg) }}" class="pd-main-img" alt="{{ $product->name }}">
-                @else
-                    <div style="width:100%;height:100%;display:flex;align-items:center;justify-content:center;color:rgba(11,42,74,.15);font-size:64px;background:#f7f4ef;">🌿</div>
-                @endif
-            </div>
-            @if(count($allImages) > 1)
-            <div class="pd-thumbnails">
-                @foreach($allImages as $i => $img)
-                <img src="{{ asset($img) }}" class="pd-thumb {{ $i===0?'active':'' }}"
-                     onclick="changeImage('{{ asset($img) }}', this)" alt="Foto {{ $i+1 }}">
-                @endforeach
+    {{-- ── GAMBAR / PREVIEW ───────────────────────────────────── --}}
+    @php
+        $allImages = [];
+
+        if ($product->images && $product->images->count() > 0) {
+            $allImages = $product->images->pluck('image')->toArray();
+        }
+
+        if ($product->image) {
+            array_unshift($allImages, $product->image);
+        }
+
+        $allImages = array_unique($allImages);
+
+        $mainImg = $allImages[0] ?? null;
+    @endphp
+
+    <div class="pd-images">
+
+        <div class="pd-main-img-wrap" id="previewWrap">
+
+            {{-- MAIN IMAGE --}}
+            <img id="mainImage"
+                 src="{{ $mainImg ? asset($mainImg) : asset('images/placeholder.jpg') }}"
+                 class="pd-main-img"
+                 alt="{{ $product->name }}">
+
+            {{-- MAIN VIDEO --}}
+            @if($product->video)
+            <video id="mainVideo"
+                   controls
+                   playsinline
+                   preload="auto"
+                   style="width:100%;height:100%;object-fit:cover;display:none;background:#000;">
+                <source src="{{ asset($product->video) }}" type="video/mp4">
+            </video>
+            @endif
+
+        </div>
+
+        {{-- THUMBNAILS --}}
+        @if(count($allImages) > 1 || $product->video)
+        <div class="pd-thumbnails">
+
+            @foreach($allImages as $index => $img)
+                <img src="{{ asset($img) }}"
+                     class="pd-thumb {{ $index === 0 ? 'active' : '' }}"
+                     onclick="showImage('{{ asset($img) }}', this)"
+                     alt="Thumbnail {{ $index + 1 }}">
+            @endforeach
+
+            {{-- VIDEO THUMB --}}
+            @if($product->video)
+            <div class="pd-thumb"
+                 onclick="showVideo(this)"
+                 style="
+                    display:flex;
+                    align-items:center;
+                    justify-content:center;
+                    background:#111;
+                    color:white;
+                    font-size:18px;
+                    font-weight:600;
+                 ">
+                ▶
             </div>
             @endif
+
         </div>
+        @endif
+
+    </div>
 
         {{-- ── INFO ──────────────────────────────────────────────────── --}}
         <div class="pd-info">
@@ -506,10 +553,54 @@ const VARIANTS_DATA = {
 </a>
 
 <script>
-function changeImage(src, el) {
+function showImage(src, el) {
+
     const img = document.getElementById('mainImage');
-    if(img){ img.style.opacity='.5'; img.src=src; img.onload=()=>{ img.style.opacity='1'; }; }
-    document.querySelectorAll('.pd-thumb').forEach(t=>t.classList.remove('active'));
+    const video = document.getElementById('mainVideo');
+
+    // hide video kalau lagi tampil
+    if(video){
+        video.pause();
+        video.style.display = 'none';
+    }
+
+    // tampilkan image
+    img.style.display = 'block';
+    img.style.opacity = '.5';
+
+    img.src = src;
+
+    img.onload = () => {
+        img.style.opacity = '1';
+    };
+
+    // active thumbnail
+    document.querySelectorAll('.pd-thumb').forEach(t=>{
+        t.classList.remove('active');
+    });
+
+    el.classList.add('active');
+}
+
+function showVideo(el){
+
+    const img = document.getElementById('mainImage');
+    const video = document.getElementById('mainVideo');
+
+    if(!video) return;
+
+    // hide image
+    img.style.display = 'none';
+
+    // show video
+    video.style.display = 'block';
+    video.currentTime = 0;
+
+    // active thumbnail
+    document.querySelectorAll('.pd-thumb').forEach(t=>{
+        t.classList.remove('active');
+    });
+
     el.classList.add('active');
 }
 function increase(){

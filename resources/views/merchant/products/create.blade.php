@@ -156,6 +156,24 @@ input[type="checkbox"].toggle:checked::after{left:18px;}
         <div id="multiPreview" class="image-preview"></div>
     </div>
 
+    <div class="form-group full">
+    <label class="form-label">Video Produk</label>
+    <div class="section-divider"></div>
+
+    <input
+        type="file"
+        name="video"
+        class="form-input"
+        accept="video/mp4,video/webm"
+        onchange="previewVideo(this)"
+    >
+    <p class="form-hint">
+        Optional. Max 10MB. Format: MP4 / WEBM
+    </p>
+
+    <div id="videoPreview" style="margin-top:12px;"></div>
+    </div>
+
 </div>
 
 <div class="form-footer">
@@ -176,5 +194,24 @@ function updateDiscountPreview(discount){
     else{preview.innerHTML='Berlaku untuk harga dasar. Variasi punya harga sendiri.';}
 }
 document.querySelector('[name="price"]')?.addEventListener('input',function(){updateDiscountPreview(document.querySelector('[name="discount_percent"]')?.value||0);});
+</script>
+
+<script>
+function previewVideo(input){
+    const preview=document.getElementById('videoPreview');
+    preview.innerHTML='';
+
+    if(input.files && input.files[0]){
+        const video=document.createElement('video');
+
+        video.src=URL.createObjectURL(input.files[0]);
+        video.controls=true;
+        video.style.width='220px';
+        video.style.borderRadius='10px';
+        video.style.border='1px solid rgba(11,42,74,.1)';
+
+        preview.appendChild(video);
+    }
+}
 </script>
 @endsection

@@ -46,6 +46,16 @@ input[type="checkbox"].toggle:checked::after{left:18px;}
 </form>
 @endforeach
 
+@if($product->video)
+<form id="delete-video-form"
+      action="{{ route('merchant.products.deleteVideo', $product) }}"
+      method="POST"
+      style="display:none;">
+    @csrf
+    @method('DELETE')
+</form>
+@endif
+
 <div class="form-card">
 <form action="{{ route('merchant.products.update', $product) }}" method="POST" enctype="multipart/form-data">
 @csrf @method('PUT')
@@ -67,11 +77,11 @@ input[type="checkbox"].toggle:checked::after{left:18px;}
         @error('name')<p class="field-error">{{ $message }}</p>@enderror
     </div>
 
-<div class="form-group">
-    <label class="form-label">Kategori</label>
-    @include('merchant.products._category_select', ['selectedId' => old('category_id', $product->category_id)])
-    <p class="form-hint">Termasuk kategori global dan kategori toko kamu sendiri.</p>
-</div>
+    <div class="form-group">
+        <label class="form-label">Kategori</label>
+        @include('merchant.products._category_select', ['selectedId' => old('category_id', $product->category_id)])
+        <p class="form-hint">Termasuk kategori global dan kategori toko kamu sendiri.</p>
+    </div>
 
     <div class="form-group">
         <label class="form-label">Harga Dasar (Rp) *</label>
@@ -110,7 +120,6 @@ input[type="checkbox"].toggle:checked::after{left:18px;}
         <p class="form-hint">Untuk produk tanpa variasi. Jika ada variasi, stok diatur per baris.</p>
     </div>
 
-    {{-- ── UKURAN & VARIASI ──────────────────────────────────────── --}}
     <div class="form-group full">
         <div class="size-section-label">Ukuran Tunggal
             <span style="font-size:10px;color:rgba(11,42,74,.3);text-transform:none;letter-spacing:0;">— isi jika produk hanya 1 ukuran</span>
@@ -146,7 +155,6 @@ input[type="checkbox"].toggle:checked::after{left:18px;}
     <div class="form-group full" style="background:#fafaf8;border:.5px solid rgba(11,42,74,.07);border-radius:12px;padding:20px 24px;">
         @include('merchant.products._variant_builder', ['product' => $product])
     </div>
-    {{-- ─────────────────────────────────────────────────────────── --}}
 
     <div class="form-group">
         <label class="form-label">Deskripsi Singkat — Indonesia</label>
@@ -187,7 +195,10 @@ input[type="checkbox"].toggle:checked::after{left:18px;}
                 @foreach($product->images as $img)
                 <div class="extra-img-wrap">
                     <img src="{{ asset($img->image) }}" class="extra-img" alt="">
-                    <button type="submit" form="delete-image-{{ $img->id }}" class="extra-img-delete" onclick="return confirm('Hapus gambar ini?')">×</button>
+                    <button type="submit"
+                            form="delete-image-{{ $img->id }}"
+                            class="extra-img-delete"
+                            onclick="return confirm('Hapus gambar ini?')">×</button>
                 </div>
                 @endforeach
             </div>
@@ -199,25 +210,109 @@ input[type="checkbox"].toggle:checked::after{left:18px;}
         <div id="multiPreview" class="image-preview"></div>
     </div>
 
+    <div class="form-group full">
+        <label class="form-label">Video Produk</label>
+        <div class="section-divider"></div>
+
+        @if($product->video)
+            <span class="current-label">Video saat ini:</span>
+
+            <div style="position:relative;width:220px;">
+                <video controls
+                       playsinline
+                       style="width:220px;border-radius:10px;background:#000;display:block;">
+                    <source src="{{ asset($product->video) }}" type="video/mp4">
+                    Browser tidak mendukung video.
+                </video>
+
+                <button type="submit"
+                        form="delete-video-form"
+                        class="extra-img-delete"
+                        onclick="return confirm('Hapus video ini?')"
+                        style="top:8px;right:8px;">
+                    ×
+                </button>
+            </div>
+
+            <p class="form-hint" style="margin-top:8px;">
+                Upload video baru untuk mengganti video lama.
+            </p>
+        @endif
+
+        <input type="file"
+               name="video"
+               class="form-input"
+               accept=".mp4,.webm,.mov"
+               onchange="previewVideo(this)"
+               style="margin-top:12px;">
+        <p class="form-hint">Format: MP4, MOV, WEBM • Maksimal 10MB</p>
+        <div id="videoPreview" style="margin-top:12px;"></div>
+    </div>
+
 </div>
 
 <div class="form-footer">
     <button type="submit" class="btn-submit">Update Produk</button>
     <a href="{{ route('merchant.products.index') }}" class="btn-cancel">Batal</a>
 </div>
+
 </form>
 </div>
 
 <script>
-function previewMain(input){const p=document.getElementById('mainPreview');p.innerHTML='';if(input.files&&input.files[0]){const i=document.createElement('img');i.src=URL.createObjectURL(input.files[0]);i.className='image-preview-item';p.appendChild(i);}}
-function previewMultiple(input){const p=document.getElementById('multiPreview');p.innerHTML='';Array.from(input.files).forEach(f=>{const i=document.createElement('img');i.src=URL.createObjectURL(f);i.className='image-preview-item';p.appendChild(i);});}
-function updateDiscountPreview(discount){
-    const price=parseInt(document.querySelector('[name="price"]').value)||0;
-    const d=parseInt(discount)||0;
-    const preview=document.getElementById('discountPreview');
-    if(d>0&&price>0){const final=Math.round(price*(1-d/100));preview.innerHTML='Harga setelah diskon: <strong>Rp '+final.toLocaleString('id-ID')+'</strong>';}
-    else{preview.innerHTML='Berlaku untuk harga dasar. Variasi punya harga sendiri.';}
+function previewMain(input) {
+    const p = document.getElementById('mainPreview');
+    p.innerHTML = '';
+    if (input.files && input.files[0]) {
+        const i = document.createElement('img');
+        i.src = URL.createObjectURL(input.files[0]);
+        i.className = 'image-preview-item';
+        p.appendChild(i);
+    }
 }
-document.querySelector('[name="price"]')?.addEventListener('input',function(){updateDiscountPreview(document.querySelector('[name="discount_percent"]')?.value||0);});
+
+function previewMultiple(input) {
+    const p = document.getElementById('multiPreview');
+    p.innerHTML = '';
+    Array.from(input.files).forEach(f => {
+        const i = document.createElement('img');
+        i.src = URL.createObjectURL(f);
+        i.className = 'image-preview-item';
+        p.appendChild(i);
+    });
+}
+
+function previewVideo(input) {
+    const preview = document.getElementById('videoPreview');
+    preview.innerHTML = '';
+    if (input.files && input.files[0]) {
+        const video = document.createElement('video');
+        video.src = URL.createObjectURL(input.files[0]);
+        video.controls = true;
+        video.playsInline = true;
+        video.style.width = '220px';
+        video.style.borderRadius = '10px';
+        video.style.background = '#000';
+        video.style.display = 'block';
+        preview.appendChild(video);
+    }
+}
+
+function updateDiscountPreview(discount) {
+    const price   = parseInt(document.querySelector('[name="price"]').value) || 0;
+    const d       = parseInt(discount) || 0;
+    const preview = document.getElementById('discountPreview');
+    if (d > 0 && price > 0) {
+        const final = Math.round(price * (1 - d / 100));
+        preview.innerHTML = 'Harga setelah diskon: <strong>Rp ' + final.toLocaleString('id-ID') + '</strong>';
+    } else {
+        preview.innerHTML = 'Berlaku untuk harga dasar. Variasi punya harga sendiri.';
+    }
+}
+
+document.querySelector('[name="price"]')?.addEventListener('input', function () {
+    updateDiscountPreview(document.querySelector('[name="discount_percent"]')?.value || 0);
+});
 </script>
+
 @endsection

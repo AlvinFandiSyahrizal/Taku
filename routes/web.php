@@ -342,6 +342,7 @@ Route::middleware(['auth', 'isMerchant'])
         Route::get('/products/create', [MerchantProductController::class, 'create'])->name('products.create');
         Route::post('/products', [MerchantProductController::class, 'store'])->name('products.store');
         Route::delete('/products/images/{image}', [MerchantProductController::class, 'destroyImage'])->name('products.images.destroy');
+        Route::delete('/products/{product}/delete-video', [MerchantProductController::class, 'deleteVideo'])->name('products.deleteVideo');
         Route::get('/products/{product}/edit', [MerchantProductController::class, 'edit'])->name('products.edit');
         Route::put('/products/{product}', [MerchantProductController::class, 'update'])->name('products.update');
         Route::delete('/products/{product}', [MerchantProductController::class, 'destroy'])->name('products.destroy');

@@ -74,6 +74,7 @@ public function create()
             'variants.*.height_unit'      => 'nullable|in:cm,meter',
             'variants.*.diameter'         => 'nullable|numeric|min:0',
             'variants.*.diameter_unit'    => 'nullable|in:cm,meter',
+            'video' => 'nullable|mimes:mp4,webm|max:10240',
         ]);
 
         $imagePath = null;
@@ -81,10 +82,16 @@ public function create()
             $imagePath = $request->file('image')->store('products', 'public');
         }
 
+        $videoPath = null;
+
+        if ($request->hasFile('video')) {
+            $videoPath = $request->file('video')->store('products/videos', 'public');
+        }
+
         $product = Product::create([
             'store_id'         => $this->myStore()->id,
             'name'             => $request->name,
-            'slug' => Str::slug($request->name) . '-' . time(),
+            'slug'             => Str::slug($request->name) . '-' . time(),
             'category_id'      => $request->category_id ?: null,
             'price'            => $request->price,
             'discount_percent' => (int) $request->get('discount_percent', 0),
@@ -100,6 +107,7 @@ public function create()
             'height_unit'      => $request->height ? ($request->height_unit ?? 'cm') : 'cm',
             'diameter'         => $request->diameter ?: null,
             'diameter_unit'    => $request->diameter ? ($request->diameter_unit ?? 'cm') : 'cm',
+            'video'            => $videoPath ? 'storage/' . $videoPath : null,
         ]);
 
         $this->syncVariants($product, $request->input('variants', []));
@@ -163,6 +171,7 @@ public function edit(Product $product)
             'variants.*.height_unit'      => 'nullable|in:cm,meter',
             'variants.*.diameter'         => 'nullable|numeric|min:0',
             'variants.*.diameter_unit'    => 'nullable|in:cm,meter',
+            'video'                       => 'nullable|mimes:mp4,webm|max:10240',
         ]);
 
         $currentImage = $product->image;
@@ -170,6 +179,21 @@ public function edit(Product $product)
             if ($currentImage) Storage::disk('public')->delete(str_replace('storage/', '', $currentImage));
             $newPath      = $request->file('image')->store('products', 'public');
             $currentImage = 'storage/' . $newPath;
+        }
+
+        $currentVideo = $product->video;
+
+        if ($request->hasFile('video')) {
+
+            if ($currentVideo) {
+                Storage::disk('public')->delete(
+                    str_replace('storage/', '', $currentVideo)
+                );
+            }
+
+            $newVideo = $request->file('video')->store('products/videos', 'public');
+
+            $currentVideo = 'storage/' . $newVideo;
         }
 
         $product->update([
@@ -190,6 +214,7 @@ public function edit(Product $product)
             'height_unit'      => $request->height ? ($request->height_unit ?? 'cm') : 'cm',
             'diameter'         => $request->diameter ?: null,
             'diameter_unit'    => $request->diameter ? ($request->diameter_unit ?? 'cm') : 'cm',
+            'video'            => $currentVideo,
         ]);
 
         $this->syncVariants($product, $request->input('variants', []));
@@ -208,9 +233,25 @@ public function edit(Product $product)
     public function destroy(Product $product)
     {
         $this->authorizeProduct($product);
-        foreach ($product->images as $img) Storage::disk('public')->delete(str_replace('storage/', '', $img->image));
-        if ($product->image) Storage::disk('public')->delete(str_replace('storage/', '', $product->image));
-        $product->delete();
+            foreach ($product->images as $img) {
+                Storage::disk('public')->delete(
+                    str_replace('storage/', '', $img->image)
+                );
+            }
+
+            if ($product->image) {
+                Storage::disk('public')->delete(
+                    str_replace('storage/', '', $product->image)
+                );
+            }
+
+            if ($product->video) {
+                Storage::disk('public')->delete(
+                    str_replace('storage/', '', $product->video)
+                );
+            }
+
+            $product->delete();
         return redirect()->route('merchant.products.index')->with('success', 'Produk berhasil dihapus.');
     }
 
@@ -220,6 +261,18 @@ public function edit(Product $product)
         Storage::disk('public')->delete(str_replace('storage/', '', $image->image));
         $image->delete();
         return back()->with('success', 'Gambar berhasil dihapus.');
+    }
+
+    public function deleteVideo(Product $product)
+    {
+        $this->authorizeProduct($product);
+
+        if ($product->video) {
+            Storage::disk('public')->delete(str_replace('storage/', '', $product->video));
+            $product->update(['video' => null]);
+        }
+
+        return back()->with('success', 'Video berhasil dihapus.');
     }
 
     public function toggleActive(Product $product)
