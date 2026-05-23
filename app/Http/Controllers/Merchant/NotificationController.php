@@ -33,16 +33,23 @@ class NotificationController extends Controller
         return response()->json(['count' => $count]);
     }
 
-    public function read(Notification $notification)
+    private function authorizeNotification(Notification $notification)
     {
-        if ($notification->store_id !== $this->store()->id) {
+        if ((int) $notification->store_id !== (int) $this->store()->id) {
             abort(403);
         }
+    }
+
+    public function read(Notification $notification)
+    {
+        $this->authorizeNotification($notification);
+
         $notification->markAsRead();
 
         if ($orderId = $notification->data['order_id'] ?? null) {
             return redirect()->route('merchant.orders.show', $orderId);
         }
+
         return redirect()->route('merchant.notifications');
     }
 
