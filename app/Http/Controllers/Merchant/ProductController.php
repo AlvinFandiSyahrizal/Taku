@@ -257,9 +257,14 @@ public function edit(Product $product)
 
     public function destroyImage(ProductImage $image)
     {
-        if ($image->product->store_id !== $this->myStore()->id) abort(403);
-        Storage::disk('public')->delete(str_replace('storage/', '', $image->image));
+        $this->authorizeProduct($image->product);
+
+        Storage::disk('public')->delete(
+            str_replace('storage/', '', $image->image)
+        );
+
         $image->delete();
+
         return back()->with('success', 'Gambar berhasil dihapus.');
     }
 
